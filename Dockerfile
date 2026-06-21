@@ -11,8 +11,8 @@ RUN npm ci
 # Build Next.js
 FROM deps AS builder
 COPY . .
-RUN npm run build -- --no-lint 2>/dev/null || npx next build
-RUN npx tsc --project tsconfig.server.json || true
+RUN npx next build
+RUN npx tsc --project tsconfig.server.json
 
 # Production image
 FROM base AS runner
@@ -29,8 +29,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
+# node_modules needed for custom server (node-cron, telegram, etc.)
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
 
 RUN mkdir -p /data && chown nextjs:nodejs /data
 

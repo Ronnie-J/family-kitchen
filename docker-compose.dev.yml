@@ -1,0 +1,12 @@
+services:
+  family-kitchen-dev:
+    build: .
+    container_name: family-kitchen-dev
+    ports:
+      - "8093:3000"
+    volumes:
+      - ./data-dev:/data
+    environment:
+      - NODE_ENV=production
+      - DATA_DIR=/data
+    restart: no
