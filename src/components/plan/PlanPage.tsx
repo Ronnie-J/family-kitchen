@@ -54,7 +54,7 @@ export default function PlanPage() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [loading, setLoading] = useState(true)
   const [suggesting, setSuggesting] = useState(false)
-  const [selectedDays, setSelectedDays] = useState<number[]>([0, 1, 2, 3, 4])
+  const [selectedDays, setSelectedDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6])
   const [excludedDays, setExcludedDays] = useState<Record<number, 'eaten_out' | 'no_cooking' | null>>({})
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [ratingMeal, setRatingMeal] = useState<{ id: number; name: string } | null>(null)
