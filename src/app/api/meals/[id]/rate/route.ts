@@ -12,13 +12,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   } | undefined
   if (!meal) return NextResponse.json({ error: 'Ret ikke fundet' }, { status: 404 })
 
+  const minStars = parseInt(
+    (db.prepare('SELECT value FROM settings WHERE key = ?').get('favorite_min_stars') as { value: string } | undefined)?.value ?? '4'
+  )
+
   if (stars && stars >= 1 && stars <= 5) {
     db.prepare(`INSERT INTO meal_ratings (meal_id, stars, tags) VALUES (?, ?, ?)`).run(id, stars, JSON.stringify(tags))
 
     const newCount = meal.rating_count + 1
     const newAvg = (meal.avg_rating * meal.rating_count + stars) / newCount
 
-    const isFavorite = stars >= 4 && tags.includes('ny_favorit') ? 1 : undefined
+    const isFavorite = stars >= minStars ? 1 : undefined
     const exclude = tags.includes('ikke_igen') ? 1 : undefined
 
     db.prepare(`

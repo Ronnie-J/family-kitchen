@@ -21,7 +21,8 @@ export async function POST(req: NextRequest) {
 
   const recentHistory = db.prepare(`
     SELECT meal_name, made_at, stars FROM meal_history
-    ORDER BY made_at DESC LIMIT 20
+    WHERE made_at >= date('now', '-14 days', 'localtime')
+    ORDER BY made_at DESC
   `).all() as { meal_name: string; made_at: string; stars: number }[]
 
   const favorites = db.prepare(`

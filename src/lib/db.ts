@@ -118,7 +118,8 @@ function initSchema(db: Database.Database) {
       ('telegram_bot_token', ''),
       ('telegram_chat_id', ''),
       ('telegram_send_time', '09:00'),
-      ('permanent_shopping_items', 'Mælk\nÆg\nBrød');
+      ('permanent_shopping_items', 'Mælk\nÆg\nBrød'),
+      ('favorite_min_stars', '4');
   `)
 
   // Migrations

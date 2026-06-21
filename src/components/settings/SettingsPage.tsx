@@ -219,6 +219,19 @@ export default function SettingsPage() {
               className="w-full mt-1 border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 resize-none"
             />
           </div>
+          <div>
+            <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Gem automatisk som favorit ved</label>
+            <select
+              value={settings.favorite_min_stars || '4'}
+              onChange={e => set('favorite_min_stars', e.target.value)}
+              className="w-full mt-1 border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+            >
+              <option value="3">3 stjerner eller mere</option>
+              <option value="4">4 stjerner eller mere</option>
+              <option value="5">Kun 5 stjerner</option>
+            </select>
+            <p className="text-xs text-stone-400 mt-1">Retter der bedømmes til dette antal stjerner gemmes automatisk i Favoritter under Ugeplaner</p>
+          </div>
         </section>
 
         {/* Unsplash */}

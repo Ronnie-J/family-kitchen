@@ -55,6 +55,121 @@ db.prepare(`UPDATE ai_logs SET response_preview = ? WHERE id = last_insert_rowid
 
 **Suggestions-flow:** AI-forslag gemmes ikke automatisk til dage — brugeren vælger selv dag via dag-chips (Man–Søn) på hvert forslagskort.
 
+**Antal AI-forslag:** Sendes som `Math.max(2, tomme dage)` — aldrig færre end 2, aldrig mere end nødvendigt.
+
+**Historik-vindue:** Kun retter lavet inden for de seneste 14 dage havner i "undgå gentagelse"-listen i AI-prompten. Ældre retter er frie at foreslå igen.
+
+**Favoritter:** `is_favorite = 1` i `meals`-tabellen. Sættes automatisk når en ret bedømmes til `favorite_min_stars` eller derover (default 4). Favoritter vises i et kollapsibelt panel under Ugeplaner, hvorfra de kan planlægges direkte.
+
+## Forretningsregler
+
+### Ugeplanlægning
+- Ugen starter mandag. Navigér op til 2 uger frem og 2 uger tilbage.
+- Dage kan markeres som "Spiser ude", "Ingen madlavning" eller have en planlagt ret.
+- Rester: én ret kan strække sig over to dage. Næste dag markeres `is_leftover = 1` og vises som "Rester fra [dag]" uden ingredienser.
+- "Lavet"-knappen (✓) markerer status `done` og åbner bedømmelsesdialogen.
+
+### AI-forslag (`/api/plan/suggest`)
+- Antal forslag = `Math.max(2, antal tomme dage i ugen)`
+- Historik-vindue = retter lavet inden for **14 dage** (undgå gentagelse)
+- Favoritter (is_favorite=1) inkluderes som inspiration i prompten
+- Ingredienser skaleres til `parseInt(adults) + parseInt(children)` personer
+- Hvert forslag indeholder: navn, beskrivelse, tilberedningstid, ingredienser med mængder, opskrift (4–8 trin)
+- Forslaget sendes ikke automatisk til en dag — brugeren vælger dag via chips
+
+### 2-dages ret (`/api/plan/scale`)
+- Når "Strækker sig over 2 dage" toggles på et AI-forslag, kaldes Mistral for at skalere ingredienserne op
+- Primæringredienser (kød, fisk, pasta, ris, kartofler, bønner) fordobles
+- Smaggivere (hvidløg, løg, krydderier, olie) øges med ca. 50%
+- Væsker (bouillon, fløde, kokosmælk) fordobles
+- Dag 1 gemmes med skalerede ingredienser; dag 2 sættes automatisk som `is_leftover = 1`
+
+### Bedømmelse og favoritter
+- Bedømmelse 1–5 stjerner gives efter "Lavet" markering
+- Tærskel `favorite_min_stars` (default: 4) styres i Indstillinger
+- Hvis stjerner ≥ tærskel → `is_favorite = 1` sættes automatisk på retten
+- Tag `ikke_igen` → `exclude_from_suggestions = 1`
+- Favoritter vises i Ugeplaner og kan planlægges direkte til en dag
+- Favoritter kan fjernes manuelt via ✕ (sætter `is_favorite = 0`)
+
+### Lager
+- To placeringer: `freezer` (fryser) og `pantry` (spisekammer)
+- Kategorier med farvet badge: kød (rød), fisk (blå), grønt (grøn), mejeri (gul), desserter (pink), andet (lilla)
+- Varer kan scannes via stregkode (Open Food Facts) eller billedanalyse (Pixtral Vision)
+
+## AI-prompts
+
+### Madforslag (`src/app/api/plan/suggest/route.ts`)
+
+```
+Du er en familiekogebog-assistent. Foreslå [N] middagsretter til en dansk familie.
+
+FAMILIEPROFIL:
+- [X] voksne og [Y] børn (alder: [aldre]) = [total] personer i alt
+- Allergier/præferencer: [allergier]
+- Køkkentype: [køkkentype]
+- Madpræferencer: [ai_preferences]
+
+LAGER – FRYSER:
+- [vare] ([kategori]) – [mængde]
+...
+
+LAGER – SPISEKAMMER:
+- [vare] ([kategori]) – [mængde]
+...
+
+SENESTE RETTER (undgå gentagelse — lavet inden for 14 dage):
+- [ret] ([dato])
+...
+
+FAVORITTER (forsøg at inkludere 1-2):
+- [ret] ([★])
+...
+
+Returnér præcis et JSON-array med [N] retter i dette format (ingen markdown, kun JSON):
+[
+  {
+    "name": "Rettens navn",
+    "description": "Kort appetitlig beskrivelse (2-3 sætninger)",
+    "prep_time": 30,
+    "ingredients": ["500g pasta", "400g hakket oksekød", "2 dåser hakkede tomater"],
+    "recipe": ["Kog pasta i rigeligt saltet vand i 10 min.", "Brun det hakkede kød på en varm pande.", "..."],
+    "uses_inventory": true
+  }
+]
+
+VIGTIGT:
+- Alle ingrediensmængder skal være afpasset til præcis [total] personer
+- "ingredients" er en liste af strenge med mængde + navn, fx "500g pasta" eller "3 fed hvidløg"
+- "recipe" er en liste af korte trin (4-8 trin) der beskriver fremgangsmåden trin for trin
+- Prioritér retter der bruger det der allerede er på lager
+- Varier mellem hurtige hverdagsretter og lidt mere festlige retter til weekend
+- Alle navne, tekster og trin skal være på dansk
+```
+
+### 2-dages skalering (`src/app/api/plan/scale/route.ts`)
+
+```
+Du har en opskrift på "[ret]" til [total] personer (1 dag). Juster ingrediensmængderne
+så der er nok til 2 dage — altså at man laver dobbelt portion dag 1 og gemmer rester til dag 2.
+
+Ingredienser til [total] personer / 1 dag:
+- [ingrediens]
+...
+
+Regler:
+- Primæringredienser (kød, fisk, pasta, ris, kartofler, bønner) fordobles
+- Smaggivere (hvidløg, løg, krydderier, olie) øges med ca. 50%
+- Væsker (bouillon, fløde, kokosmælk) fordobles
+
+Returnér KUN et JSON-array med de justerede ingredienser på dansk (ingen markdown, ingen forklaring):
+["800g hakket oksekød", "4 dåser hakkede tomater", "600g spaghetti"]
+```
+
+### Billedanalyse (`src/app/api/vision/route.ts`)
+
+Pixtral-12B analyserer et billede af en vare og returnerer JSON med navn, kategori, mængde og placering (freezer/pantry).
+
 ## Filstruktur — nøglefiler
 
 | Fil | Ansvar |
@@ -62,9 +177,11 @@ db.prepare(`UPDATE ai_logs SET response_preview = ? WHERE id = last_insert_rowid
 | `src/lib/db.ts` | SQLite schema, migrations, eksporterede typer |
 | `src/lib/telegram.ts` | Ugentlig besked-opbygning og Telegram-afsendelse |
 | `src/app/api/plan/suggest/route.ts` | Mistral AI-forslag med opskrift og ingredienser |
+| `src/app/api/plan/scale/route.ts` | Mistral skalering af ingredienser til 2-dages ret |
+| `src/app/api/meals/[id]/rate/route.ts` | Bedømmelse + auto-favorit ved tærskel |
 | `src/app/api/vision/route.ts` | Pixtral billedanalyse til lager-scanning |
-| `src/components/plan/PlanPage.tsx` | Ugeplanlægning — den mest komplekse komponent |
-| `src/components/settings/SettingsPage.tsx` | Indstillinger inkl. AI-log |
+| `src/components/plan/PlanPage.tsx` | Ugeplanlægning inkl. favoritter og AI-forslag |
+| `src/components/settings/SettingsPage.tsx` | Indstillinger inkl. AI-log og favorit-tærskel |
 | `server.ts` | Custom Next.js server med node-cron til Telegram |
 | `Dockerfile` | Multi-stage build; `.dockerignore` ekskluderer macOS node_modules |
 

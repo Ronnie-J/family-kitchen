@@ -45,6 +45,17 @@ function formatDate(weekStart: string, dayIdx: number) {
   return `${d.getDate()}/${d.getMonth() + 1}`
 }
 
+type FavoriteMeal = {
+  id: number
+  name: string
+  description: string | null
+  prep_time: number | null
+  ingredients: string
+  avg_rating: number
+  rating_count: number
+  image_url: string | null
+}
+
 export default function PlanPage() {
   const [weekOffset, setWeekOffset] = useState(0)
   const weekStart = getWeekStart(weekOffset)
@@ -52,6 +63,8 @@ export default function PlanPage() {
   const isCurrentWeek = weekOffset === 0
   const [plan, setPlan] = useState<WeeklyPlanEntry[]>([])
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  const [favorites, setFavorites] = useState<FavoriteMeal[]>([])
+  const [showFavorites, setShowFavorites] = useState(false)
   const [loading, setLoading] = useState(true)
   const [suggesting, setSuggesting] = useState(false)
   const [selectedDays, setSelectedDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6])
@@ -64,9 +77,14 @@ export default function PlanPage() {
 
   const load = async () => {
     setLoading(true)
-    const res = await fetch(`/api/plan?week=${weekStart}`)
-    const data = await res.json()
-    setPlan(data.plan)
+    const [planRes, favRes] = await Promise.all([
+      fetch(`/api/plan?week=${weekStart}`),
+      fetch('/api/meals?favorites=1'),
+    ])
+    const planData = await planRes.json()
+    const favData = await favRes.json()
+    setPlan(planData.plan)
+    setFavorites(Array.isArray(favData) ? favData : [])
     setLoading(false)
   }
 
@@ -93,14 +111,13 @@ export default function PlanPage() {
   }
 
   const handleGetSuggestions = async () => {
-    const activeDays = selectedDays.filter(d => !excludedDays[d])
-    if (activeDays.length === 0) return
+    if (activeDaysCount === 0) return
     setSuggesting(true)
     setShowSuggestions(true)
     const res = await fetch('/api/plan/suggest', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ days: activeDays.length }),
+      body: JSON.stringify({ days: Math.max(2, activeDaysCount) }),
     })
     const data = await res.json()
     setSuggesting(false)
@@ -175,6 +192,34 @@ export default function PlanPage() {
       }),
     })
     setActiveDay(null)
+    load()
+  }
+
+  const planFavorite = async (dayIdx: number, fav: FavoriteMeal) => {
+    const ingredients: string[] = (() => { try { return JSON.parse(fav.ingredients) } catch { return [] } })()
+    await fetch('/api/plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        week_start: weekStart,
+        day_of_week: dayIdx,
+        meal_name: fav.name,
+        meal_description: fav.description,
+        meal_ingredients: ingredients,
+        meal_prep_time: fav.prep_time,
+        meal_image_url: fav.image_url,
+        status: 'planned',
+      }),
+    })
+    load()
+  }
+
+  const removeFavorite = async (id: number) => {
+    await fetch(`/api/meals/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_favorite: false }),
+    })
     load()
   }
 
@@ -458,6 +503,89 @@ export default function PlanPage() {
           )
         })}
       </div>
+
+      {/* Favoritter */}
+      {favorites.length > 0 && (
+        <div className="bg-white rounded-2xl border border-stone-100 overflow-hidden mb-4">
+          <button
+            onClick={() => setShowFavorites(f => !f)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-stone-50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-base">⭐</span>
+              <span className="font-semibold text-stone-700">Favoritter</span>
+              <span className="text-xs bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full font-medium">{favorites.length}</span>
+            </div>
+            <ChevronRight size={15} className={`text-stone-400 transition-transform ${showFavorites ? 'rotate-90' : ''}`} />
+          </button>
+
+          {showFavorites && (
+            <div className="border-t border-stone-100 divide-y divide-stone-50">
+              {favorites.map(fav => {
+                const avgStars = Math.round(fav.avg_rating)
+                return (
+                  <div key={fav.id} className="p-4">
+                    <div className="flex gap-3">
+                      {fav.image_url ? (
+                        <img src={fav.image_url} alt={fav.name} className="w-14 h-14 object-cover rounded-xl shrink-0" />
+                      ) : (
+                        <div className="w-14 h-14 bg-orange-50 rounded-xl flex items-center justify-center shrink-0 text-xl">🍽️</div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="font-semibold text-stone-800 text-sm">{fav.name}</div>
+                          <button
+                            onClick={() => removeFavorite(fav.id)}
+                            className="text-stone-300 hover:text-red-400 shrink-0 transition-colors"
+                            title="Fjern fra favoritter"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs text-amber-500">{'★'.repeat(avgStars)}{'☆'.repeat(5 - avgStars)}</span>
+                          <span className="text-xs text-stone-400">({fav.rating_count} bedømmelser)</span>
+                          {fav.prep_time && <span className="text-xs text-stone-400"><Clock size={10} className="inline mr-0.5" />{fav.prep_time} min</span>}
+                        </div>
+                        {fav.description && (
+                          <p className="text-xs text-stone-500 mt-1 leading-relaxed line-clamp-2">{fav.description}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-3 pt-2.5 border-t border-stone-50">
+                      <div className="text-xs text-stone-400 mb-1.5">Planlæg til dag:</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {DAY_SHORT.map((label, dayIdx) => {
+                          const dayEntry = getPlanEntry(dayIdx)
+                          const isExcluded = !!(excludedDays[dayIdx] || dayEntry?.status === 'eaten_out' || dayEntry?.status === 'no_cooking')
+                          const hasMeal = !!(dayEntry?.meal_name)
+                          const isDisabled = isExcluded || hasMeal
+                          return (
+                            <button
+                              key={dayIdx}
+                              disabled={isDisabled}
+                              onClick={() => planFavorite(dayIdx, fav)}
+                              className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
+                                isDisabled
+                                  ? 'bg-stone-100 text-stone-300 cursor-not-allowed'
+                                  : 'bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white border border-orange-200'
+                              }`}
+                              title={isDisabled ? (hasMeal ? 'Dagen har allerede en ret' : 'Ekskluderet dag') : `Planlæg til ${DAY_NAMES[dayIdx]}`}
+                            >
+                              {label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Suggestion details panel */}
       {showSuggestions && suggestions.length > 0 && (
