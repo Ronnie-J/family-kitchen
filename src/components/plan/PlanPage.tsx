@@ -268,37 +268,108 @@ export default function PlanPage() {
                 </div>
               </div>
 
-              {/* Day options dropdown */}
-              {activeDay === dayIdx && (
-                <div className="border-t border-stone-100 px-4 py-3 bg-stone-50 flex flex-wrap gap-2">
-                  <button
-                    onClick={() => { setDayStatus(dayIdx, null); setActiveDay(null) }}
-                    className="text-xs bg-white border border-stone-200 px-3 py-1.5 rounded-lg hover:bg-stone-100 transition-colors"
-                  >
-                    <Utensils size={11} className="inline mr-1" /> Planlæg ret
-                  </button>
-                  <button
-                    onClick={() => { setDayStatus(dayIdx, 'eaten_out'); setActiveDay(null) }}
-                    className="text-xs bg-white border border-stone-200 px-3 py-1.5 rounded-lg hover:bg-stone-100 transition-colors"
-                  >
-                    🍕 Spiser ude
-                  </button>
-                  <button
-                    onClick={() => { setDayStatus(dayIdx, 'no_cooking'); setActiveDay(null) }}
-                    className="text-xs bg-white border border-stone-200 px-3 py-1.5 rounded-lg hover:bg-stone-100 transition-colors"
-                  >
-                    ✋ Ingen madlavning
-                  </button>
-                  {(entry || excludedDays[dayIdx]) && (
-                    <button
-                      onClick={() => { setDayStatus(dayIdx, null); setActiveDay(null) }}
-                      className="text-xs text-red-500 bg-white border border-red-100 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
-                    >
-                      <X size={11} className="inline mr-1" /> Ryd dag
-                    </button>
-                  )}
-                </div>
-              )}
+              {/* Expanded panel */}
+              {activeDay === dayIdx && (() => {
+                const activeMeal = entry?.meal_name ? entry : suggestion ? {
+                  meal_name: suggestion.name,
+                  meal_description: suggestion.description,
+                  meal_ingredients: JSON.stringify(suggestion.ingredients),
+                  meal_prep_time: suggestion.prep_time,
+                  meal_image_url: suggestion.image_url,
+                } : null
+
+                const ingredients: string[] = (() => {
+                  try { return JSON.parse(activeMeal?.meal_ingredients || '[]') } catch { return [] }
+                })()
+
+                return (
+                  <div className="border-t border-stone-100">
+                    {/* Handlingsknapper øverst */}
+                    <div className="px-4 py-3 bg-stone-50 flex flex-wrap gap-2 border-b border-stone-100">
+                      <button
+                        onClick={() => { setDayStatus(dayIdx, null); setActiveDay(null) }}
+                        className="text-xs bg-white border border-stone-200 px-3 py-1.5 rounded-lg hover:bg-stone-100 transition-colors font-medium"
+                      >
+                        <Utensils size={11} className="inline mr-1" /> Planlæg ret
+                      </button>
+                      <button
+                        onClick={() => { setDayStatus(dayIdx, 'eaten_out'); setActiveDay(null) }}
+                        className="text-xs bg-white border border-stone-200 px-3 py-1.5 rounded-lg hover:bg-stone-100 transition-colors"
+                      >
+                        🍕 Spiser ude
+                      </button>
+                      <button
+                        onClick={() => { setDayStatus(dayIdx, 'no_cooking'); setActiveDay(null) }}
+                        className="text-xs bg-white border border-stone-200 px-3 py-1.5 rounded-lg hover:bg-stone-100 transition-colors"
+                      >
+                        ✋ Ingen madlavning
+                      </button>
+                      {(entry || excludedDays[dayIdx]) && (
+                        <button
+                          onClick={() => { setDayStatus(dayIdx, null); setActiveDay(null) }}
+                          className="text-xs text-red-500 bg-white border border-red-100 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                        >
+                          <X size={11} className="inline mr-1" /> Ryd dag
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Opskrift + billede */}
+                    {activeMeal && (
+                      <div className="px-4 py-4 space-y-3">
+                        {/* Billede */}
+                        {activeMeal.meal_image_url && (
+                          <a
+                            href={activeMeal.meal_image_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block"
+                          >
+                            <img
+                              src={activeMeal.meal_image_url}
+                              alt={activeMeal.meal_name ?? ''}
+                              className="w-full h-40 object-cover rounded-xl hover:opacity-90 transition-opacity"
+                            />
+                          </a>
+                        )}
+
+                        {/* Beskrivelse */}
+                        {activeMeal.meal_description && (
+                          <p className="text-sm text-stone-600 leading-relaxed">{activeMeal.meal_description}</p>
+                        )}
+
+                        {/* Ingredienser */}
+                        {ingredients.length > 0 && (
+                          <div>
+                            <div className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Ingredienser</div>
+                            <ul className="grid grid-cols-2 gap-x-4 gap-y-1">
+                              {ingredients.map((ing, i) => (
+                                <li key={i} className="text-sm text-stone-700 flex items-start gap-1.5">
+                                  <span className="text-orange-400 mt-0.5 shrink-0">·</span>
+                                  {ing}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Ekstern opskriftslink */}
+                        {activeMeal.meal_name && (
+                          <a
+                            href={`https://www.google.com/search?q=${encodeURIComponent(activeMeal.meal_name + ' opskrift')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs text-stone-400 hover:text-orange-500 transition-colors"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                            Søg opskrift på Google
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
           )
         })}
