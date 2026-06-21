@@ -133,7 +133,22 @@ export default function SettingsPage() {
                 {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
-            <p className="text-xs text-stone-400 mt-1">Bruges til AI-madforslag og fotoanalyse. Opret gratis nøgle på <span className="font-medium">aistudio.google.com</span>. Gemmes kun lokalt.</p>
+            <p className="text-xs text-stone-400 mt-1">
+              Gratis nøgle: <span className="font-medium">aistudio.google.com</span> → "Get API key" (brug ikke Google Cloud Console — giver kvote-fejl).
+            </p>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Gemini-model</label>
+            <select
+              value={settings.gemini_model || 'gemini-2.0-flash'}
+              onChange={e => set('gemini_model', e.target.value)}
+              className="w-full mt-1 border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+            >
+              <option value="gemini-2.0-flash">gemini-2.0-flash (anbefalet)</option>
+              <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite (hurtigst)</option>
+              <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+              <option value="gemini-1.5-pro">gemini-1.5-pro (bedst, men langsommere)</option>
+            </select>
           </div>
           <div>
             <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Madpræferencer til AI</label>

@@ -104,6 +104,7 @@ function initSchema(db: Database.Database) {
       ('kitchen_type', 'blandet'),
       ('ai_preferences', 'Vi kan lide varieret mad. Børnene er lidt kræsne. Vi foretrækker retter der kan laves på under en time på hverdage.'),
       ('gemini_api_key', ''),
+      ('gemini_model', 'gemini-2.0-flash'),
       ('unsplash_access_key', ''),
       ('telegram_bot_token', ''),
       ('telegram_chat_id', ''),
