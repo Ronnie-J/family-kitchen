@@ -25,6 +25,7 @@ export default function SettingsPage() {
   const [logs, setLogs] = useState<AiLog[]>([])
   const [logsOpen, setLogsOpen] = useState(false)
   const [expandedLog, setExpandedLog] = useState<number | null>(null)
+  const [mockStatus, setMockStatus] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(d => {
@@ -38,6 +39,22 @@ export default function SettingsPage() {
   const clearLogs = async () => {
     await fetch('/api/ai-logs', { method: 'DELETE' })
     setLogs([])
+  }
+
+  const loadMockData = async () => {
+    setMockStatus('Indlæser...')
+    const res = await fetch('/api/mock', { method: 'POST' })
+    const data = await res.json()
+    setMockStatus(data.message)
+    setTimeout(() => setMockStatus(null), 3000)
+  }
+
+  const clearMockData = async () => {
+    setMockStatus('Rydder...')
+    const res = await fetch('/api/mock', { method: 'DELETE' })
+    const data = await res.json()
+    setMockStatus(data.message)
+    setTimeout(() => setMockStatus(null), 3000)
   }
 
   const set = (key: string, value: string) => setSettings(s => ({ ...s, [key]: value }))
@@ -282,6 +299,31 @@ export default function SettingsPage() {
               className="w-full mt-1 border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 resize-none"
             />
             <p className="text-xs text-stone-400 mt-1">Disse varer tilføjes automatisk til ugentlige indkøbslister</p>
+          </div>
+        </section>
+
+        {/* Mock data */}
+        <section className="bg-white rounded-2xl border border-stone-100 p-5">
+          <h2 className="font-semibold text-stone-800 mb-1">🧪 Testdata</h2>
+          <p className="text-xs text-stone-400 mb-4">
+            Fylder lager, ugeplanen, indkøbsliste og historik med realistiske data til test. Ryd sletter alt ikke-permanent data.
+          </p>
+          {mockStatus && (
+            <div className="mb-3 px-3 py-2 rounded-xl text-sm bg-blue-50 text-blue-600">{mockStatus}</div>
+          )}
+          <div className="flex gap-3">
+            <button
+              onClick={loadMockData}
+              className="flex-1 py-2.5 bg-stone-800 text-white rounded-xl text-sm font-medium hover:bg-stone-700 transition-colors"
+            >
+              Indlæs testdata
+            </button>
+            <button
+              onClick={clearMockData}
+              className="flex-1 py-2.5 border border-red-200 text-red-500 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors"
+            >
+              Ryd alt data
+            </button>
           </div>
         </section>
 
