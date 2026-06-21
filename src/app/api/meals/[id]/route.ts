@@ -13,7 +13,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const db = getDb()
   const { id } = await params
   const body = await req.json()
-  const { name, description, prep_time, ingredients, image_url, is_favorite, exclude_from_suggestions } = body
+  const { name, description, prep_time, ingredients, recipe, image_url, is_favorite, exclude_from_suggestions } = body
 
   const meal = db.prepare('SELECT id FROM meals WHERE id = ?').get(id)
   if (!meal) return NextResponse.json({ error: 'Ret ikke fundet' }, { status: 404 })
@@ -24,6 +24,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       description = COALESCE(?, description),
       prep_time = COALESCE(?, prep_time),
       ingredients = COALESCE(?, ingredients),
+      recipe = COALESCE(?, recipe),
       image_url = COALESCE(?, image_url),
       is_favorite = COALESCE(?, is_favorite),
       exclude_from_suggestions = COALESCE(?, exclude_from_suggestions)
@@ -31,6 +32,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   `).run(
     name ?? null, description ?? null, prep_time ?? null,
     ingredients ? JSON.stringify(ingredients) : null,
+    recipe ? JSON.stringify(recipe) : null,
     image_url ?? null,
     is_favorite !== undefined ? (is_favorite ? 1 : 0) : null,
     exclude_from_suggestions !== undefined ? (exclude_from_suggestions ? 1 : 0) : null,

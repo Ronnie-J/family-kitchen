@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Sparkles, RefreshCw, Check, X, ChevronRight, ChevronLeft, Clock, Utensils } from 'lucide-react'
 import type { WeeklyPlanEntry } from '@/lib/db'
 import RatingModal from '@/components/meals/RatingModal'
+import InlineListEditor from '@/components/plan/InlineListEditor'
 
 const DAY_NAMES = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag']
 const DAY_SHORT = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn']
@@ -215,6 +216,42 @@ export default function PlanPage() {
       }),
     })
     load()
+  }
+
+  const savePlanField = async (entry: WeeklyPlanEntry, field: 'meal_ingredients' | 'meal_recipe', value: string[]) => {
+    const ingredients = field === 'meal_ingredients' ? value : JSON.parse(entry.meal_ingredients || '[]')
+    const recipe = field === 'meal_recipe' ? value : (() => { try { return JSON.parse(entry.meal_recipe || '[]') } catch { return [] } })()
+    await fetch('/api/plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        week_start: weekStart,
+        day_of_week: entry.day_of_week,
+        meal_name: entry.meal_name,
+        meal_description: entry.meal_description,
+        meal_ingredients: ingredients,
+        meal_recipe: recipe,
+        meal_prep_time: entry.meal_prep_time,
+        meal_image_url: entry.meal_image_url,
+        status: entry.status,
+        is_leftover: entry.is_leftover,
+      }),
+    })
+    load()
+  }
+
+  const saveFavoriteField = async (id: number, field: 'ingredients' | 'recipe', value: string[]) => {
+    await fetch(`/api/meals/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: value }),
+    })
+    load()
+  }
+
+  const saveSuggestionField = (idx: number, field: 'ingredients' | 'recipe', value: string[]) => {
+    setSuggestions(prev => prev.map((s, i) => i === idx ? { ...s, [field]: value } : s))
+    return Promise.resolve()
   }
 
   const removeFavorite = async (id: number) => {
@@ -439,33 +476,22 @@ export default function PlanPage() {
                         )}
 
                         {/* Ingredienser */}
-                        {ingredients.length > 0 && (
-                          <div>
-                            <div className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Ingredienser</div>
-                            <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                              {ingredients.map((ing, i) => (
-                                <li key={i} className="text-sm text-stone-700 flex items-start gap-1.5">
-                                  <span className="text-orange-400 mt-0.5 shrink-0">·</span>
-                                  {ing}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
+                        {(ingredients.length > 0 || !activeMeal.is_leftover) && (
+                          <InlineListEditor
+                            label="Ingredienser"
+                            items={ingredients}
+                            onSave={v => savePlanField(activeMeal, 'meal_ingredients', v)}
+                          />
                         )}
 
                         {/* Fremgangsmåde */}
-                        {recipeSteps.length > 0 && (
-                          <div>
-                            <div className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Fremgangsmåde</div>
-                            <ol className="space-y-2">
-                              {recipeSteps.map((step, i) => (
-                                <li key={i} className="flex gap-3 text-sm text-stone-700">
-                                  <span className="shrink-0 w-5 h-5 bg-orange-100 text-orange-600 rounded-full text-xs font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
-                                  <span className="leading-relaxed">{step}</span>
-                                </li>
-                              ))}
-                            </ol>
-                          </div>
+                        {(recipeSteps.length > 0 || !activeMeal.is_leftover) && (
+                          <InlineListEditor
+                            label="Fremgangsmåde"
+                            items={recipeSteps}
+                            ordered
+                            onSave={v => savePlanField(activeMeal, 'meal_recipe', v)}
+                          />
                         )}
 
                         {/* Ekstern opskriftslink */}
@@ -569,28 +595,22 @@ export default function PlanPage() {
 
                     {favIngredients.length > 0 && (
                       <div className="mt-3">
-                        <div className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-1.5">Ingredienser</div>
-                        <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
-                          {favIngredients.map((ing, j) => (
-                            <li key={j} className="text-xs text-stone-600 flex items-start gap-1">
-                              <span className="text-orange-300 shrink-0 mt-0.5">·</span>{ing}
-                            </li>
-                          ))}
-                        </ul>
+                        <InlineListEditor
+                          label="Ingredienser"
+                          items={favIngredients}
+                          onSave={v => saveFavoriteField(fav.id, 'ingredients', v)}
+                        />
                       </div>
                     )}
 
                     {favRecipe.length > 0 && (
                       <div className="mt-3">
-                        <div className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-1.5">Fremgangsmåde</div>
-                        <ol className="space-y-1.5">
-                          {favRecipe.map((step, j) => (
-                            <li key={j} className="flex gap-2 text-xs text-stone-600">
-                              <span className="shrink-0 w-4 h-4 bg-orange-100 text-orange-600 rounded-full text-[10px] font-bold flex items-center justify-center mt-0.5">{j + 1}</span>
-                              <span className="leading-relaxed">{step}</span>
-                            </li>
-                          ))}
-                        </ol>
+                        <InlineListEditor
+                          label="Fremgangsmåde"
+                          items={favRecipe}
+                          ordered
+                          onSave={v => saveFavoriteField(fav.id, 'recipe', v)}
+                        />
                       </div>
                     )}
 
@@ -662,28 +682,22 @@ export default function PlanPage() {
                     </div>
                     {s.ingredients.length > 0 && (
                       <div className="mt-2">
-                        <div className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-1.5">Ingredienser</div>
-                        <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
-                          {s.ingredients.map((ing, j) => (
-                            <li key={j} className="text-xs text-stone-600 flex items-start gap-1">
-                              <span className="text-orange-300 shrink-0 mt-0.5">·</span>{ing}
-                            </li>
-                          ))}
-                        </ul>
+                        <InlineListEditor
+                          label="Ingredienser"
+                          items={s.ingredients}
+                          onSave={v => saveSuggestionField(i, 'ingredients', v)}
+                        />
                       </div>
                     )}
 
                     {s.recipe && s.recipe.length > 0 && (
                       <div className="mt-3">
-                        <div className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-1.5">Fremgangsmåde</div>
-                        <ol className="space-y-1.5">
-                          {s.recipe.map((step, j) => (
-                            <li key={j} className="flex gap-2 text-xs text-stone-600">
-                              <span className="shrink-0 w-4 h-4 bg-orange-100 text-orange-600 rounded-full text-[10px] font-bold flex items-center justify-center mt-0.5">{j + 1}</span>
-                              <span className="leading-relaxed">{step}</span>
-                            </li>
-                          ))}
-                        </ol>
+                        <InlineListEditor
+                          label="Fremgangsmåde"
+                          items={s.recipe}
+                          ordered
+                          onSave={v => saveSuggestionField(i, 'recipe', v)}
+                        />
                       </div>
                     )}
                   </div>
