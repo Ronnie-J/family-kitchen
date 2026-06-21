@@ -51,6 +51,7 @@ type FavoriteMeal = {
   description: string | null
   prep_time: number | null
   ingredients: string
+  recipe: string | null
   avg_rating: number
   rating_count: number
   image_url: string | null
@@ -197,6 +198,7 @@ export default function PlanPage() {
 
   const planFavorite = async (dayIdx: number, fav: FavoriteMeal) => {
     const ingredients: string[] = (() => { try { return JSON.parse(fav.ingredients) } catch { return [] } })()
+    const recipe: string[] = (() => { try { return JSON.parse(fav.recipe || '[]') } catch { return [] } })()
     await fetch('/api/plan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -206,6 +208,7 @@ export default function PlanPage() {
         meal_name: fav.name,
         meal_description: fav.description,
         meal_ingredients: ingredients,
+        meal_recipe: recipe,
         meal_prep_time: fav.prep_time,
         meal_image_url: fav.image_url,
         status: 'planned',
@@ -235,7 +238,14 @@ export default function PlanPage() {
       const res = await fetch('/api/meals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: entry.meal_name, description: entry.meal_description, prep_time: entry.meal_prep_time, ingredients: JSON.parse(entry.meal_ingredients || '[]') }),
+        body: JSON.stringify({
+          name: entry.meal_name,
+          description: entry.meal_description,
+          prep_time: entry.meal_prep_time,
+          ingredients: JSON.parse(entry.meal_ingredients || '[]'),
+          recipe: (() => { try { return JSON.parse(entry.meal_recipe || '[]') } catch { return [] } })(),
+          image_url: entry.meal_image_url,
+        }),
       })
       const meal = await res.json()
       setRatingMeal({ id: meal.id, name: meal.name })
@@ -523,13 +533,17 @@ export default function PlanPage() {
             <div className="border-t border-stone-100 divide-y divide-stone-50">
               {favorites.map(fav => {
                 const avgStars = Math.round(fav.avg_rating)
+                const favIngredients: string[] = (() => { try { return JSON.parse(fav.ingredients) } catch { return [] } })()
+                const favRecipe: string[] = (() => { try { return JSON.parse(fav.recipe || '[]') } catch { return [] } })()
                 return (
                   <div key={fav.id} className="p-4">
                     <div className="flex gap-3">
                       {fav.image_url ? (
-                        <img src={fav.image_url} alt={fav.name} className="w-14 h-14 object-cover rounded-xl shrink-0" />
+                        <a href={fav.image_url} target="_blank" rel="noopener noreferrer" className="shrink-0">
+                          <img src={fav.image_url} alt={fav.name} className="w-16 h-16 object-cover rounded-xl hover:opacity-90 transition-opacity" />
+                        </a>
                       ) : (
-                        <div className="w-14 h-14 bg-orange-50 rounded-xl flex items-center justify-center shrink-0 text-xl">🍽️</div>
+                        <div className="w-16 h-16 bg-orange-50 rounded-xl flex items-center justify-center shrink-0 text-xl">🍽️</div>
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
@@ -548,10 +562,38 @@ export default function PlanPage() {
                           {fav.prep_time && <span className="text-xs text-stone-400"><Clock size={10} className="inline mr-0.5" />{fav.prep_time} min</span>}
                         </div>
                         {fav.description && (
-                          <p className="text-xs text-stone-500 mt-1 leading-relaxed line-clamp-2">{fav.description}</p>
+                          <p className="text-xs text-stone-500 mt-1 leading-relaxed">{fav.description}</p>
                         )}
                       </div>
                     </div>
+
+                    {favIngredients.length > 0 && (
+                      <div className="mt-3">
+                        <div className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-1.5">Ingredienser</div>
+                        <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
+                          {favIngredients.map((ing, j) => (
+                            <li key={j} className="text-xs text-stone-600 flex items-start gap-1">
+                              <span className="text-orange-300 shrink-0 mt-0.5">·</span>{ing}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {favRecipe.length > 0 && (
+                      <div className="mt-3">
+                        <div className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-1.5">Fremgangsmåde</div>
+                        <ol className="space-y-1.5">
+                          {favRecipe.map((step, j) => (
+                            <li key={j} className="flex gap-2 text-xs text-stone-600">
+                              <span className="shrink-0 w-4 h-4 bg-orange-100 text-orange-600 rounded-full text-[10px] font-bold flex items-center justify-center mt-0.5">{j + 1}</span>
+                              <span className="leading-relaxed">{step}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+
 
                     <div className="mt-3 pt-2.5 border-t border-stone-50">
                       <div className="text-xs text-stone-400 mb-1.5">Planlæg til dag:</div>

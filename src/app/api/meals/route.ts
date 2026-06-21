@@ -13,14 +13,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const db = getDb()
   const body = await req.json()
-  const { name, description, prep_time, ingredients = [], image_url } = body
+  const { name, description, prep_time, ingredients = [], recipe = [], image_url } = body
 
   if (!name?.trim()) return NextResponse.json({ error: 'Navn er påkrævet' }, { status: 400 })
 
   const result = db.prepare(`
-    INSERT INTO meals (name, description, prep_time, ingredients, image_url)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(name.trim(), description || null, prep_time || null, JSON.stringify(ingredients), image_url || null)
+    INSERT INTO meals (name, description, prep_time, ingredients, recipe, image_url)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(name.trim(), description || null, prep_time || null, JSON.stringify(ingredients), JSON.stringify(recipe), image_url || null)
 
   return NextResponse.json(db.prepare('SELECT * FROM meals WHERE id = ?').get(result.lastInsertRowid), { status: 201 })
 }

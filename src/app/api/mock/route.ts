@@ -55,17 +55,47 @@ export async function POST() {
 
   // Meals (til historik og favoritter)
   const meals = [
-    { name: 'Spaghetti Bolognese', description: 'Klassisk italiensk kødsovs med spaghetti', prep_time: 45, ingredients: JSON.stringify(['500g hakket oksekød', '2 dåser hakkede tomater', '400g spaghetti', '1 løg', '3 fed hvidløg', 'Oregano']), avg_rating: 4.5, rating_count: 4, is_favorite: 1 },
-    { name: 'Kylling i karry', description: 'Mild karrygryde med kylling og ris', prep_time: 35, ingredients: JSON.stringify(['4 kyllingefileter', '2 dåser kokosmælk', '2 spsk karry', '1 løg', '400g ris']), avg_rating: 4.8, rating_count: 5, is_favorite: 1 },
-    { name: 'Laksepasta', description: 'Cremet pasta med laks og spinat', prep_time: 25, ingredients: JSON.stringify(['400g laks', '400g penne', '200g spinat', '2 dl fløde', '2 fed hvidløg']), avg_rating: 4.2, rating_count: 3, is_favorite: 0 },
-    { name: 'Tacos med oksekød', description: 'Mexicansk-inspirerede tacos til hele familien', prep_time: 30, ingredients: JSON.stringify(['500g hakket oksekød', '8 tacos', '1 dåse majs', 'Salat', 'Tomater', 'Rød salsa']), avg_rating: 4.6, rating_count: 6, is_favorite: 1 },
-    { name: 'Rejerisotto', description: 'Cremet risotto med rejer og parmesan', prep_time: 40, ingredients: JSON.stringify(['250g rejer', '300g risottoris', '1 l grøntsagsbouillon', '50g parmesan', '1 løg', '2 dl hvidvin']), avg_rating: 3.8, rating_count: 2, is_favorite: 0 },
-    { name: 'Kikærtesuppe', description: 'Krydret kikærtesuppe med brød', prep_time: 30, ingredients: JSON.stringify(['2 dåser kikærter', '1 dåse hakkede tomater', '1 løg', '3 fed hvidløg', '2 spsk spidskommen']), avg_rating: 4.0, rating_count: 3, is_favorite: 0 },
+    {
+      name: 'Spaghetti Bolognese', description: 'Klassisk italiensk kødsovs med spaghetti', prep_time: 45,
+      ingredients: JSON.stringify(['500g hakket oksekød', '2 dåser hakkede tomater', '400g spaghetti', '1 løg', '3 fed hvidløg', 'Oregano']),
+      recipe: JSON.stringify(['Hak løg og hvidløg fint og svits i olivenolie.', 'Brun det hakkede kød grundigt.', 'Tilsæt hakkede tomater og oregano, lad simre 20 min.', 'Kog spaghetti efter anvisning.', 'Anret og server med revet parmesan.']),
+      avg_rating: 4.5, rating_count: 4, is_favorite: 1,
+    },
+    {
+      name: 'Kylling i karry', description: 'Mild karrygryde med kylling og ris', prep_time: 35,
+      ingredients: JSON.stringify(['4 kyllingefileter', '2 dåser kokosmælk', '2 spsk karry', '1 løg', '400g ris']),
+      recipe: JSON.stringify(['Skær kylling i tern og brun i en varm gryde.', 'Tilsæt hakket løg og karry, steg 2 min.', 'Hæld kokosmælk i og lad simre 20 min.', 'Kog ris separat og server til.']),
+      avg_rating: 4.8, rating_count: 5, is_favorite: 1,
+    },
+    {
+      name: 'Laksepasta', description: 'Cremet pasta med laks og spinat', prep_time: 25,
+      ingredients: JSON.stringify(['400g laks', '400g penne', '200g spinat', '2 dl fløde', '2 fed hvidløg']),
+      recipe: JSON.stringify(['Kog pasta al dente.', 'Steg laks i tern med hvidløg i smør.', 'Tilsæt fløde og spinat, varm igennem.', 'Bland med pasta og server.']),
+      avg_rating: 4.2, rating_count: 3, is_favorite: 0,
+    },
+    {
+      name: 'Tacos med oksekød', description: 'Mexicansk-inspirerede tacos til hele familien', prep_time: 30,
+      ingredients: JSON.stringify(['500g hakket oksekød', '8 tacos', '1 dåse majs', 'Salat', 'Tomater', 'Rød salsa']),
+      recipe: JSON.stringify(['Brun kødet med taco-krydderi.', 'Skær grøntsager i strimler.', 'Varm tacoskaller i ovn 5 min.', 'Anret på bordet og lad alle fylde selv.']),
+      avg_rating: 4.6, rating_count: 6, is_favorite: 1,
+    },
+    {
+      name: 'Rejerisotto', description: 'Cremet risotto med rejer og parmesan', prep_time: 40,
+      ingredients: JSON.stringify(['250g rejer', '300g risottoris', '1 l grøntsagsbouillon', '50g parmesan', '1 løg', '2 dl hvidvin']),
+      recipe: JSON.stringify(['Svits løg i smør til det er blødt.', 'Tilsæt risottoris og rør 2 min.', 'Hæld hvidvin i og lad det absorbere.', 'Tilsæt bouillon lidt ad gangen under konstant omrøring.', 'Rør rejer og parmesan i og server straks.']),
+      avg_rating: 3.8, rating_count: 2, is_favorite: 0,
+    },
+    {
+      name: 'Kikærtesuppe', description: 'Krydret kikærtesuppe med brød', prep_time: 30,
+      ingredients: JSON.stringify(['2 dåser kikærter', '1 dåse hakkede tomater', '1 løg', '3 fed hvidløg', '2 spsk spidskommen']),
+      recipe: JSON.stringify(['Svits løg og hvidløg i olivenolie.', 'Tilsæt spidskommen og steg 1 min.', 'Tilsæt kikærter og tomater, lad simre 15 min.', 'Blend halvdelen for cremet konsistens.', 'Server med godt brød.']),
+      avg_rating: 4.0, rating_count: 3, is_favorite: 0,
+    },
   ]
 
   const insertMeal = db.prepare(`
-    INSERT INTO meals (name, description, prep_time, ingredients, avg_rating, rating_count, is_favorite, last_made_at)
-    VALUES (@name, @description, @prep_time, @ingredients, @avg_rating, @rating_count, @is_favorite, @last_made_at)
+    INSERT INTO meals (name, description, prep_time, ingredients, recipe, avg_rating, rating_count, is_favorite, last_made_at)
+    VALUES (@name, @description, @prep_time, @ingredients, @recipe, @avg_rating, @rating_count, @is_favorite, @last_made_at)
   `)
 
   const mealIds: number[] = []
