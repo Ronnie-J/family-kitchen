@@ -59,6 +59,8 @@ export default function PlanPage() {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [ratingMeal, setRatingMeal] = useState<{ id: number; name: string } | null>(null)
   const [activeDay, setActiveDay] = useState<number | null>(null)
+  const [twoDaySuggestions, setTwoDaySuggestions] = useState<Set<number>>(new Set())
+  const [scaling, setScaling] = useState<number | null>(null)
 
   const load = async () => {
     setLoading(true)
@@ -106,7 +108,22 @@ export default function PlanPage() {
     else alert(data.error || 'Fejl ved AI-forslag')
   }
 
-  const acceptSuggestion = async (dayIdx: number, suggestion: Suggestion) => {
+  const acceptSuggestion = async (dayIdx: number, suggestion: Suggestion, suggestionIdx: number) => {
+    const isTwoDay = twoDaySuggestions.has(suggestionIdx)
+    let ingredients = suggestion.ingredients
+
+    if (isTwoDay) {
+      setScaling(suggestionIdx)
+      const res = await fetch('/api/plan/scale', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: suggestion.name, ingredients: suggestion.ingredients }),
+      })
+      const data = await res.json()
+      if (data.ingredients) ingredients = data.ingredients
+      setScaling(null)
+    }
+
     await fetch('/api/plan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -114,14 +131,32 @@ export default function PlanPage() {
         week_start: weekStart,
         day_of_week: dayIdx,
         meal_name: suggestion.name,
-        meal_description: suggestion.description,
-        meal_ingredients: suggestion.ingredients,
+        meal_description: suggestion.description + (isTwoDay ? ' — tilberedt til 2 dage' : ''),
+        meal_ingredients: ingredients,
         meal_prep_time: suggestion.prep_time,
         meal_image_url: suggestion.image_url,
         meal_recipe: suggestion.recipe,
         status: 'planned',
       }),
     })
+
+    if (isTwoDay && dayIdx < 6) {
+      await fetch('/api/plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          week_start: weekStart,
+          day_of_week: dayIdx + 1,
+          meal_name: suggestion.name,
+          meal_description: `Rester fra ${DAY_NAMES[dayIdx]}`,
+          meal_ingredients: [],
+          is_leftover: 1,
+          status: 'planned',
+        }),
+      })
+    }
+
+    setSuggestions(prev => prev.filter((_, j) => j !== suggestionIdx))
     load()
   }
 
@@ -484,31 +519,63 @@ export default function PlanPage() {
                   </div>
                 </div>
 
-                {/* Dag-vælger */}
-                <div className="mt-3 pt-3 border-t border-stone-50">
-                  <div className="text-xs text-stone-400 mb-2">Planlæg til dag:</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {DAY_SHORT.map((label, dayIdx) => {
-                      const dayEntry = getPlanEntry(dayIdx)
-                      const isExcluded = !!(excludedDays[dayIdx] || dayEntry?.status === 'eaten_out' || dayEntry?.status === 'no_cooking')
-                      const hasMeal = !!(dayEntry?.meal_name)
-                      const isDisabled = isExcluded || hasMeal
-                      return (
-                        <button
-                          key={dayIdx}
-                          disabled={isDisabled}
-                          onClick={() => { acceptSuggestion(dayIdx, s); setSuggestions(prev => prev.filter((_, j) => j !== i)) }}
-                          className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
-                            isDisabled
-                              ? 'bg-stone-100 text-stone-300 cursor-not-allowed'
-                              : 'bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white border border-orange-200'
-                          }`}
-                          title={isDisabled ? (hasMeal ? 'Dag har allerede en ret' : 'Dagen er markeret som ude/ingen madlavning') : `Tilføj til ${DAY_NAMES[dayIdx]}`}
-                        >
-                          {label}
-                        </button>
-                      )
+                {/* 2-dages toggle + dag-vælger */}
+                <div className="mt-3 pt-3 border-t border-stone-50 space-y-2.5">
+                  <button
+                    onClick={() => setTwoDaySuggestions(prev => {
+                      const next = new Set(prev)
+                      next.has(i) ? next.delete(i) : next.add(i)
+                      return next
                     })}
+                    className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
+                      twoDaySuggestions.has(i)
+                        ? 'bg-amber-50 border-amber-300 text-amber-700'
+                        : 'bg-stone-50 border-stone-200 text-stone-500 hover:border-amber-200 hover:text-amber-600'
+                    }`}
+                  >
+                    🥘 {twoDaySuggestions.has(i) ? 'Strækker sig over 2 dage — ingredienser skaleres op' : 'Strækker sig over 2 dage?'}
+                  </button>
+
+                  <div>
+                    <div className="text-xs text-stone-400 mb-1.5">
+                      {scaling === i ? 'Skalerer ingredienser...' : 'Planlæg til dag:'}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {DAY_SHORT.map((label, dayIdx) => {
+                        const dayEntry = getPlanEntry(dayIdx)
+                        const isExcluded = !!(excludedDays[dayIdx] || dayEntry?.status === 'eaten_out' || dayEntry?.status === 'no_cooking')
+                        const hasMeal = !!(dayEntry?.meal_name)
+                        const nextOccupied = twoDaySuggestions.has(i) && dayIdx < 6 && !!getPlanEntry(dayIdx + 1)?.meal_name
+                        const isDisabled = isExcluded || hasMeal || scaling === i
+                        return (
+                          <button
+                            key={dayIdx}
+                            disabled={isDisabled}
+                            onClick={() => acceptSuggestion(dayIdx, s, i)}
+                            className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
+                              isDisabled
+                                ? 'bg-stone-100 text-stone-300 cursor-not-allowed'
+                                : nextOccupied
+                                  ? 'bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100'
+                                  : 'bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white border border-orange-200'
+                            }`}
+                            title={
+                              isDisabled ? (hasMeal ? 'Dag har allerede en ret' : 'Ekskluderet dag') :
+                              nextOccupied ? `${DAY_NAMES[dayIdx + 1]} er optaget — rester overskrives ikke` :
+                              twoDaySuggestions.has(i) ? `Planlæg til ${DAY_NAMES[dayIdx]} + rester ${DAY_NAMES[dayIdx + 1]}` :
+                              `Tilføj til ${DAY_NAMES[dayIdx]}`
+                            }
+                          >
+                            {label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {twoDaySuggestions.has(i) && (
+                      <div className="text-xs text-amber-600 mt-1.5">
+                        Næste dag sættes automatisk som rester
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
