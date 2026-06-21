@@ -1,9 +1,18 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Save, Send, Eye, EyeOff, Check } from 'lucide-react'
+import { Save, Send, Eye, EyeOff, Check, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 
 type Settings = Record<string, string>
+
+type AiLog = {
+  id: number
+  sent_at: string
+  type: string
+  model: string
+  prompt: string
+  response_preview: string | null
+}
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings>({})
@@ -13,6 +22,9 @@ export default function SettingsPage() {
   const [showKey, setShowKey] = useState(false)
   const [testSending, setTestSending] = useState(false)
   const [testResult, setTestResult] = useState<string | null>(null)
+  const [logs, setLogs] = useState<AiLog[]>([])
+  const [logsOpen, setLogsOpen] = useState(false)
+  const [expandedLog, setExpandedLog] = useState<number | null>(null)
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(d => {
@@ -20,6 +32,13 @@ export default function SettingsPage() {
       setLoading(false)
     })
   }, [])
+
+  const loadLogs = () => fetch('/api/ai-logs').then(r => r.json()).then(setLogs)
+
+  const clearLogs = async () => {
+    await fetch('/api/ai-logs', { method: 'DELETE' })
+    setLogs([])
+  }
 
   const set = (key: string, value: string) => setSettings(s => ({ ...s, [key]: value }))
 
@@ -264,6 +283,76 @@ export default function SettingsPage() {
             />
             <p className="text-xs text-stone-400 mt-1">Disse varer tilføjes automatisk til ugentlige indkøbslister</p>
           </div>
+        </section>
+
+        {/* AI Log */}
+        <section className="bg-white rounded-2xl border border-stone-100 overflow-hidden">
+          <button
+            onClick={() => { setLogsOpen(o => !o); if (!logsOpen) loadLogs() }}
+            className="w-full flex items-center justify-between px-5 py-4 hover:bg-stone-50 transition-colors"
+          >
+            <h2 className="font-semibold text-stone-800">📋 AI-anmodningslog</h2>
+            {logsOpen ? <ChevronUp size={16} className="text-stone-400" /> : <ChevronDown size={16} className="text-stone-400" />}
+          </button>
+
+          {logsOpen && (
+            <div className="border-t border-stone-100">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-stone-50">
+                <span className="text-xs text-stone-400">{logs.length} seneste kald (maks 50)</span>
+                {logs.length > 0 && (
+                  <button onClick={clearLogs} className="flex items-center gap-1 text-xs text-red-400 hover:text-red-600">
+                    <Trash2 size={12} /> Ryd log
+                  </button>
+                )}
+              </div>
+
+              {logs.length === 0 ? (
+                <div className="px-5 py-6 text-sm text-stone-400 text-center">Ingen AI-kald endnu</div>
+              ) : (
+                <div className="divide-y divide-stone-50 max-h-[32rem] overflow-y-auto">
+                  {logs.map(log => (
+                    <div key={log.id} className="px-5 py-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${
+                            log.type === 'suggest'
+                              ? 'bg-orange-50 text-orange-600'
+                              : 'bg-blue-50 text-blue-600'
+                          }`}>
+                            {log.type === 'suggest' ? 'Forslag' : 'Vision'}
+                          </span>
+                          <span className="text-xs text-stone-400 shrink-0">{log.model}</span>
+                          <span className="text-xs text-stone-300 shrink-0">·</span>
+                          <span className="text-xs text-stone-400 shrink-0">{log.sent_at.replace('T', ' ').slice(0, 16)}</span>
+                        </div>
+                        <button
+                          onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}
+                          className="shrink-0 text-xs text-stone-400 hover:text-stone-600 flex items-center gap-0.5"
+                        >
+                          {expandedLog === log.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                        </button>
+                      </div>
+
+                      {expandedLog === log.id && (
+                        <div className="mt-3 space-y-2">
+                          <div>
+                            <div className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-1">Prompt</div>
+                            <pre className="text-xs text-stone-600 bg-stone-50 rounded-lg p-3 whitespace-pre-wrap break-words font-mono leading-relaxed max-h-64 overflow-y-auto">{log.prompt}</pre>
+                          </div>
+                          {log.response_preview && (
+                            <div>
+                              <div className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-1">Svar (uddrag)</div>
+                              <pre className="text-xs text-stone-600 bg-stone-50 rounded-lg p-3 whitespace-pre-wrap break-words font-mono leading-relaxed max-h-32 overflow-y-auto">{log.response_preview}</pre>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </section>
       </div>
 

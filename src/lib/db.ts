@@ -96,6 +96,15 @@ function initSchema(db: Database.Database) {
       value TEXT NOT NULL DEFAULT ''
     );
 
+    CREATE TABLE IF NOT EXISTS ai_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sent_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      type TEXT NOT NULL,
+      model TEXT NOT NULL,
+      prompt TEXT NOT NULL,
+      response_preview TEXT
+    );
+
     INSERT OR IGNORE INTO settings (key, value) VALUES
       ('family_adults', '2'),
       ('family_children', '2'),

@@ -19,6 +19,9 @@ export async function POST(req: NextRequest) {
 
   try {
     const client = new Mistral({ apiKey })
+    const visionPrompt = `Identificer dette madvareprodukt på billedet. Returnér KUN et JSON-objekt med disse felter:\n{"name": "Produktets navn på dansk", "category": "én af: kød, fisk, grønt, mejeri, desserter, andet"}\nHvis du ikke kan identificere produktet, gæt baseret på hvad du ser.`
+    db.prepare(`INSERT INTO ai_logs (type, model, prompt) VALUES (?, ?, ?)`).run('vision', 'pixtral-12b-2409', `[Billedanalyse – base64 billede]\n\n${visionPrompt}`)
+
     const response = await client.chat.complete({
       model: 'pixtral-12b-2409',
       messages: [{
@@ -42,6 +45,8 @@ Hvis du ikke kan identificere produktet, gæt baseret på hvad du ser.`,
     })
 
     const text = (response.choices?.[0]?.message?.content as string) ?? ''
+    db.prepare(`UPDATE ai_logs SET response_preview = ? WHERE id = last_insert_rowid()`).run(text.slice(0, 300))
+
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) return NextResponse.json({ error: 'Kunne ikke genkende produkt' }, { status: 422 })
 

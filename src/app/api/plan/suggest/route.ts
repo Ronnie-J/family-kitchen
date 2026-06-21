@@ -84,12 +84,19 @@ VIGTIGT:
 
   try {
     const client = new Mistral({ apiKey })
+
+    db.prepare(`INSERT INTO ai_logs (type, model, prompt) VALUES (?, ?, ?)`).run('suggest', model, prompt)
+
     const response = await client.chat.complete({
       model,
       messages: [{ role: 'user', content: prompt }],
     })
 
     const text = (response.choices?.[0]?.message?.content as string) ?? ''
+
+    db.prepare(`UPDATE ai_logs SET response_preview = ? WHERE id = last_insert_rowid()`).run(
+      text.slice(0, 300)
+    )
     const jsonMatch = text.match(/\[[\s\S]*\]/)
     if (!jsonMatch) throw new Error('Kunne ikke parse svar fra Mistral')
 
