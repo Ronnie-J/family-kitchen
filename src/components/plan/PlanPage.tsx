@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Sparkles, RefreshCw, Check, X, ChevronRight, Clock, Utensils, Plus } from 'lucide-react'
+import { Sparkles, RefreshCw, Check, X, ChevronRight, ChevronLeft, Clock, Utensils } from 'lucide-react'
 import type { WeeklyPlanEntry } from '@/lib/db'
 import RatingModal from '@/components/meals/RatingModal'
 
@@ -17,15 +17,24 @@ type Suggestion = {
   uses_inventory: boolean
 }
 
-function getWeekStart() {
+function getWeekStart(offsetWeeks = 0) {
   const d = new Date()
   const day = d.getDay()
   const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-  d.setDate(diff)
+  d.setDate(diff + offsetWeeks * 7)
   const year = d.getFullYear()
   const month = String(d.getMonth() + 1).padStart(2, '0')
   const date = String(d.getDate()).padStart(2, '0')
   return `${year}-${month}-${date}`
+}
+
+function getWeekNumber(weekStart: string) {
+  const [y, m, day] = weekStart.split('-').map(Number)
+  const d = new Date(y, m - 1, day)
+  const jan4 = new Date(d.getFullYear(), 0, 4)
+  const startOfWeek1 = new Date(jan4)
+  startOfWeek1.setDate(jan4.getDate() - (jan4.getDay() || 7) + 1)
+  return Math.floor((d.getTime() - startOfWeek1.getTime()) / (7 * 86400000)) + 1
 }
 
 function formatDate(weekStart: string, dayIdx: number) {
@@ -36,7 +45,10 @@ function formatDate(weekStart: string, dayIdx: number) {
 }
 
 export default function PlanPage() {
-  const [weekStart] = useState(getWeekStart)
+  const [weekOffset, setWeekOffset] = useState(0)
+  const weekStart = getWeekStart(weekOffset)
+  const currentWeekStart = getWeekStart(0)
+  const isCurrentWeek = weekOffset === 0
   const [plan, setPlan] = useState<WeeklyPlanEntry[]>([])
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [loading, setLoading] = useState(true)
@@ -135,7 +147,7 @@ export default function PlanPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-stone-800">Ugeplaner</h1>
         <button
           onClick={handleGetSuggestions}
@@ -147,12 +159,44 @@ export default function PlanPage() {
         </button>
       </div>
 
+      {/* Uge-navigation */}
+      <div className="flex items-center justify-between bg-white border border-stone-100 rounded-xl px-4 py-3 mb-4">
+        <button
+          onClick={() => { setWeekOffset(o => o - 1); setSuggestions([]); setShowSuggestions(false) }}
+          disabled={weekOffset <= -2}
+          className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-50 disabled:opacity-30 transition-colors"
+        >
+          <ChevronLeft size={18} />
+        </button>
+
+        <div className="text-center">
+          <div className="font-semibold text-stone-800 text-sm">
+            Uge {getWeekNumber(weekStart)} · {formatDate(weekStart, 0)} – {formatDate(weekStart, 6)}
+          </div>
+          <div className="text-xs mt-0.5">
+            {weekOffset === 0 && <span className="text-orange-500 font-medium">Denne uge</span>}
+            {weekOffset === 1 && <span className="text-blue-500 font-medium">Næste uge</span>}
+            {weekOffset === 2 && <span className="text-stone-400">Om 2 uger</span>}
+            {weekOffset === -1 && <span className="text-stone-400">Forrige uge</span>}
+            {weekOffset === -2 && <span className="text-stone-400">For 2 uger siden</span>}
+          </div>
+        </div>
+
+        <button
+          onClick={() => { setWeekOffset(o => o + 1); setSuggestions([]); setShowSuggestions(false) }}
+          disabled={weekOffset >= 2}
+          className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-50 disabled:opacity-30 transition-colors"
+        >
+          <ChevronRight size={18} />
+        </button>
+      </div>
+
       {/* Week calendar */}
       <div className="space-y-3 mb-6">
         {Array.from({ length: 7 }, (_, i) => i).map(dayIdx => {
           const entry = getPlanEntry(dayIdx)
           const excluded = excludedDays[dayIdx] ?? entry?.status
-          const isToday = new Date().getDay() === (dayIdx === 6 ? 0 : dayIdx + 1)
+          const isToday = isCurrentWeek && new Date().getDay() === (dayIdx === 6 ? 0 : dayIdx + 1)
           const suggestion = suggestions[selectedDays.filter(d => !excludedDays[d]).indexOf(dayIdx)]
 
           return (
