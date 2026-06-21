@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: #f97316;
+}
+
+body {
+  @apply bg-stone-50 text-stone-900;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

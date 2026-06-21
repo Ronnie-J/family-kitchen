@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "lib": ["esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "outDir": "dist",
+    "target": "es2020",
+    "paths": { "@/*": ["./src/*"] }
+  },
+  "include": ["server.ts", "src/lib/**/*.ts"],
+  "exclude": ["node_modules", "src/app"]
+}

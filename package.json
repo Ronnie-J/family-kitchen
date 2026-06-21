@@ -1,0 +1,35 @@
+{
+  "name": "family-kitchen",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node --project tsconfig.server.json server.ts",
+    "build": "next build && tsc --project tsconfig.server.json",
+    "start": "node dist/server.js",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "better-sqlite3": "^11.5.0",
+    "html5-qrcode": "^2.3.8",
+    "lucide-react": "^0.468.0",
+    "next": "^15.1.0",
+    "node-cron": "^3.0.3",
+    "node-telegram-bot-api": "^0.64.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.1",
+    "@types/node-cron": "^3.0.11",
+    "@types/node-telegram-bot-api": "^0.64.7",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.16",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}
