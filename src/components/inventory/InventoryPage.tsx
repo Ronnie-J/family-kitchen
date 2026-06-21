@@ -11,7 +11,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   grønt:    'bg-green-100 text-green-700',
   mejeri:   'bg-yellow-100 text-yellow-700',
   desserter:'bg-pink-100 text-pink-700',
-  andet:    'bg-stone-100 text-stone-600',
+  andet:    'bg-purple-100 text-purple-700',
 }
 
 function CategoryBadge({ category }: { category: string }) {
