@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   try {
     const ai = new GoogleGenAI({ apiKey })
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-1.5-flash',
       contents: [{
         role: 'user',
         parts: [
@@ -43,6 +43,11 @@ Hvis du ikke kan identificere produktet, gæt baseret på hvad du ser.`,
 
     return NextResponse.json(JSON.parse(jsonMatch[0]))
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    const msg = String(e)
+    const isQuota = msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota')
+    const friendlyError = isQuota
+      ? 'Gemini kvote overskredet. Brug en nøgle fra aistudio.google.com for gratis adgang.'
+      : msg
+    return NextResponse.json({ error: friendlyError }, { status: isQuota ? 429 : 500 })
   }
 }

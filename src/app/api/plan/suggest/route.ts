@@ -74,7 +74,7 @@ Prioritér retter der bruger det der allerede er på lager. Varier mellem hurtig
   try {
     const ai = new GoogleGenAI({ apiKey })
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-1.5-flash',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     })
 
@@ -104,6 +104,11 @@ Prioritér retter der bruger det der allerede er på lager. Varier mellem hurtig
 
     return NextResponse.json({ suggestions: enriched })
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    const msg = String(e)
+    const isQuota = msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota')
+    const friendlyError = isQuota
+      ? 'Gemini kvote overskredet. Brug en nøgle fra aistudio.google.com (ikke Google Cloud Console) for gratis adgang.'
+      : msg
+    return NextResponse.json({ error: friendlyError }, { status: isQuota ? 429 : 500 })
   }
 }
