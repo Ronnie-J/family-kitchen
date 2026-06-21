@@ -84,15 +84,38 @@ export default function SettingsPage() {
               />
             </div>
           </div>
-          <div className="mb-3">
-            <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Børnenes alder</label>
-            <input
-              value={settings.family_children_ages || ''}
-              onChange={e => set('family_children_ages', e.target.value)}
-              placeholder="fx 7, 9"
-              className="w-full mt-1 border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
-            />
-          </div>
+          {parseInt(settings.family_children || '0') > 0 && (
+            <div className="mb-3">
+              <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Børnenes alder</label>
+              <div className="mt-1 space-y-2">
+                {Array.from({ length: parseInt(settings.family_children) }, (_, i) => {
+                  const ages = (settings.family_children_ages || '').split(',').map(s => s.trim())
+                  return (
+                    <div key={i} className="flex items-center gap-3">
+                      <span className="text-sm text-stone-500 w-14 shrink-0">Barn {i + 1}</span>
+                      <div className="flex items-center gap-1.5 flex-1">
+                        <input
+                          type="number"
+                          min="0"
+                          max="18"
+                          value={ages[i] || ''}
+                          onChange={e => {
+                            const updated = Array.from({ length: parseInt(settings.family_children) }, (_, j) =>
+                              j === i ? e.target.value : (ages[j] || '')
+                            )
+                            set('family_children_ages', updated.join(', '))
+                          }}
+                          placeholder="Alder"
+                          className="w-20 border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                        />
+                        <span className="text-sm text-stone-400">år</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
           <div className="mb-3">
             <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Allergier / præferencer</label>
             <input
