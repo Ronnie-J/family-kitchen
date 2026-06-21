@@ -13,6 +13,7 @@ type Suggestion = {
   description: string
   prep_time: number
   ingredients: string[]
+  recipe: string[]
   image_url: string | null
   uses_inventory: boolean
 }
@@ -117,6 +118,7 @@ export default function PlanPage() {
         meal_ingredients: suggestion.ingredients,
         meal_prep_time: suggestion.prep_time,
         meal_image_url: suggestion.image_url,
+        meal_recipe: suggestion.recipe,
         status: 'planned',
       }),
     })
@@ -286,6 +288,10 @@ export default function PlanPage() {
                   try { return JSON.parse(activeMeal?.meal_ingredients || '[]') } catch { return [] }
                 })()
 
+                const recipeSteps: string[] = (() => {
+                  try { return JSON.parse(activeMeal?.meal_recipe || '[]') } catch { return [] }
+                })()
+
                 return (
                   <div className="border-t border-stone-100">
                     {/* Handlingsknapper øverst */}
@@ -346,7 +352,7 @@ export default function PlanPage() {
                         {ingredients.length > 0 && (
                           <div>
                             <div className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Ingredienser</div>
-                            <ul className="grid grid-cols-2 gap-x-4 gap-y-1">
+                            <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                               {ingredients.map((ing, i) => (
                                 <li key={i} className="text-sm text-stone-700 flex items-start gap-1.5">
                                   <span className="text-orange-400 mt-0.5 shrink-0">·</span>
@@ -354,6 +360,21 @@ export default function PlanPage() {
                                 </li>
                               ))}
                             </ul>
+                          </div>
+                        )}
+
+                        {/* Fremgangsmåde */}
+                        {recipeSteps.length > 0 && (
+                          <div>
+                            <div className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Fremgangsmåde</div>
+                            <ol className="space-y-2">
+                              {recipeSteps.map((step, i) => (
+                                <li key={i} className="flex gap-3 text-sm text-stone-700">
+                                  <span className="shrink-0 w-5 h-5 bg-orange-100 text-orange-600 rounded-full text-xs font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
+                                  <span className="leading-relaxed">{step}</span>
+                                </li>
+                              ))}
+                            </ol>
                           </div>
                         )}
 
@@ -435,7 +456,30 @@ export default function PlanPage() {
                       )}
                     </div>
                     {s.ingredients.length > 0 && (
-                      <div className="text-xs text-stone-400 mt-1">{s.ingredients.join(', ')}</div>
+                      <div className="mt-2">
+                        <div className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-1.5">Ingredienser</div>
+                        <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
+                          {s.ingredients.map((ing, j) => (
+                            <li key={j} className="text-xs text-stone-600 flex items-start gap-1">
+                              <span className="text-orange-300 shrink-0 mt-0.5">·</span>{ing}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {s.recipe && s.recipe.length > 0 && (
+                      <div className="mt-3">
+                        <div className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-1.5">Fremgangsmåde</div>
+                        <ol className="space-y-1.5">
+                          {s.recipe.map((step, j) => (
+                            <li key={j} className="flex gap-2 text-xs text-stone-600">
+                              <span className="shrink-0 w-4 h-4 bg-orange-100 text-orange-600 rounded-full text-[10px] font-bold flex items-center justify-center mt-0.5">{j + 1}</span>
+                              <span className="leading-relaxed">{step}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
                     )}
                   </div>
                 </div>

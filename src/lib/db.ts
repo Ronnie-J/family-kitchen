@@ -114,6 +114,7 @@ function initSchema(db: Database.Database) {
 
   // Migrations
   try { db.exec(`ALTER TABLE weekly_plan ADD COLUMN is_leftover INTEGER DEFAULT 0`) } catch { /* exists */ }
+  try { db.exec(`ALTER TABLE weekly_plan ADD COLUMN meal_recipe TEXT`) } catch { /* exists */ }
 }
 
 export type InventoryItem = {
@@ -154,6 +155,7 @@ export type WeeklyPlanEntry = {
   meal_ingredients: string
   meal_prep_time: number | null
   meal_image_url: string | null
+  meal_recipe: string | null
   status: 'planned' | 'eaten_out' | 'no_cooking' | 'done'
   is_leftover: number
 }

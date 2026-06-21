@@ -40,10 +40,12 @@ export async function POST(req: NextRequest) {
   const freezerItems = inventory.filter(i => i.location === 'freezer')
   const pantryItems = inventory.filter(i => i.location === 'pantry')
 
+  const persons = (parseInt(adults) || 2) + (parseInt(children) || 0)
+
   const prompt = `Du er en familiekogebog-assistent. Foreslå ${days} middagsretter til en dansk familie.
 
 FAMILIEPROFIL:
-- ${adults} voksne og ${children} børn (alder: ${childAges || 'ikke angivet'})
+- ${adults} voksne og ${children} børn (alder: ${childAges || 'ikke angivet'}) = ${persons} personer i alt
 - Allergier/præferencer: ${allergies || 'ingen'}
 - Køkkentype: ${kitchenType}
 - Madpræferencer: ${aiPreferences}
@@ -64,14 +66,21 @@ Returnér præcis et JSON-array med ${days} retter i dette format (ingen markdow
 [
   {
     "name": "Rettens navn",
-    "description": "Kort beskrivelse (1-2 sætninger)",
+    "description": "Kort appetitlig beskrivelse (2-3 sætninger)",
     "prep_time": 30,
-    "ingredients": ["ingrediens 1", "ingrediens 2"],
+    "ingredients": ["500g pasta", "400g hakket oksekød", "2 dåser hakkede tomater"],
+    "recipe": ["Kog pasta i rigeligt saltet vand i 10 min.", "Brun det hakkede kød på en varm pande.", "Tilsæt tomater, krydr med salt og peber, lad simre 15 min."],
     "uses_inventory": true
   }
 ]
 
-Prioritér retter der bruger det der allerede er på lager. Varier mellem hurtige hverdagsretter og lidt mere festlige retter til weekend. Alle navne og tekster skal være på dansk.`
+VIGTIGT:
+- Alle ingrediensmængder skal være afpasset til præcis ${persons} personer
+- "ingredients" er en liste af strenge med mængde + navn, fx "500g pasta" eller "3 fed hvidløg"
+- "recipe" er en liste af korte trin (4-8 trin) der beskriver fremgangsmåden trin for trin
+- Prioritér retter der bruger det der allerede er på lager
+- Varier mellem hurtige hverdagsretter og lidt mere festlige retter til weekend
+- Alle navne, tekster og trin skal være på dansk`
 
   try {
     const client = new Mistral({ apiKey })
@@ -88,7 +97,7 @@ Prioritér retter der bruger det der allerede er på lager. Varier mellem hurtig
 
     const unsplashKey = getS('unsplash_access_key')
     const enriched = await Promise.all(suggestions.map(async (s: {
-      name: string; description: string; prep_time: number; ingredients: string[]; uses_inventory: boolean
+      name: string; description: string; prep_time: number; ingredients: string[]; recipe: string[]; uses_inventory: boolean
     }) => {
       let image_url = null
       if (unsplashKey) {
@@ -101,7 +110,7 @@ Prioritér retter der bruger det der allerede er på lager. Varier mellem hurtig
           image_url = imgData.urls?.regular || null
         } catch { /* no image */ }
       }
-      return { ...s, image_url }
+      return { ...s, recipe: s.recipe || [], image_url }
     }))
 
     return NextResponse.json({ suggestions: enriched })
