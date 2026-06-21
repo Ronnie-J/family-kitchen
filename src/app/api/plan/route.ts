@@ -17,9 +17,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const db = getDb()
   const body = await req.json()
-  const { week_start, day_of_week, meal_id, meal_name, meal_description, meal_ingredients, meal_prep_time, meal_image_url, status } = body
+  const { week_start, day_of_week, meal_id, meal_name, meal_description, meal_ingredients, meal_prep_time, meal_image_url, status, is_leftover } = body
 
   const week = week_start || getWeekStart()
+  const leftover = is_leftover ? 1 : 0
 
   if (meal_id) {
     const meal = db.prepare('SELECT * FROM meals WHERE id = ?').get(meal_id) as {
@@ -28,8 +29,8 @@ export async function POST(req: NextRequest) {
 
     if (meal) {
       db.prepare(`
-        INSERT INTO weekly_plan (week_start, day_of_week, meal_id, meal_name, meal_description, meal_ingredients, meal_prep_time, meal_image_url, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO weekly_plan (week_start, day_of_week, meal_id, meal_name, meal_description, meal_ingredients, meal_prep_time, meal_image_url, status, is_leftover)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(week_start, day_of_week) DO UPDATE SET
           meal_id = excluded.meal_id,
           meal_name = excluded.meal_name,
@@ -37,13 +38,14 @@ export async function POST(req: NextRequest) {
           meal_ingredients = excluded.meal_ingredients,
           meal_prep_time = excluded.meal_prep_time,
           meal_image_url = excluded.meal_image_url,
-          status = excluded.status
-      `).run(week, day_of_week, meal_id, meal.name, meal.description, meal.ingredients, meal.prep_time, meal.image_url, status || 'planned')
+          status = excluded.status,
+          is_leftover = excluded.is_leftover
+      `).run(week, day_of_week, meal_id, meal.name, meal.description, meal.ingredients, meal.prep_time, meal.image_url, status || 'planned', leftover)
     }
   } else {
     db.prepare(`
-      INSERT INTO weekly_plan (week_start, day_of_week, meal_id, meal_name, meal_description, meal_ingredients, meal_prep_time, meal_image_url, status)
-      VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?)
+      INSERT INTO weekly_plan (week_start, day_of_week, meal_id, meal_name, meal_description, meal_ingredients, meal_prep_time, meal_image_url, status, is_leftover)
+      VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(week_start, day_of_week) DO UPDATE SET
         meal_id = NULL,
         meal_name = excluded.meal_name,
@@ -51,9 +53,10 @@ export async function POST(req: NextRequest) {
         meal_ingredients = excluded.meal_ingredients,
         meal_prep_time = excluded.meal_prep_time,
         meal_image_url = excluded.meal_image_url,
-        status = excluded.status
+        status = excluded.status,
+        is_leftover = excluded.is_leftover
     `).run(week, day_of_week, meal_name || null, meal_description || null,
-      JSON.stringify(meal_ingredients || []), meal_prep_time || null, meal_image_url || null, status || 'planned')
+      JSON.stringify(meal_ingredients || []), meal_prep_time || null, meal_image_url || null, status || 'planned', leftover)
   }
 
   return NextResponse.json(db.prepare('SELECT * FROM weekly_plan WHERE week_start = ? AND day_of_week = ?').get(week, day_of_week))

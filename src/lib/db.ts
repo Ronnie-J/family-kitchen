@@ -111,6 +111,9 @@ function initSchema(db: Database.Database) {
       ('telegram_send_time', '09:00'),
       ('permanent_shopping_items', 'Mælk\nÆg\nBrød');
   `)
+
+  // Migrations
+  try { db.exec(`ALTER TABLE weekly_plan ADD COLUMN is_leftover INTEGER DEFAULT 0`) } catch { /* exists */ }
 }
 
 export type InventoryItem = {
@@ -152,6 +155,7 @@ export type WeeklyPlanEntry = {
   meal_prep_time: number | null
   meal_image_url: string | null
   status: 'planned' | 'eaten_out' | 'no_cooking' | 'done'
+  is_leftover: number
 }
 
 export type ShoppingItem = {

@@ -123,6 +123,24 @@ export default function PlanPage() {
     load()
   }
 
+  const setLeftover = async (fromDayIdx: number, mealName: string) => {
+    await fetch('/api/plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        week_start: weekStart,
+        day_of_week: fromDayIdx + 1,
+        meal_name: mealName,
+        meal_description: `Rester fra ${DAY_NAMES[fromDayIdx]}`,
+        meal_ingredients: [],
+        is_leftover: 1,
+        status: 'planned',
+      }),
+    })
+    setActiveDay(null)
+    load()
+  }
+
   const markAsDone = async (entry: WeeklyPlanEntry) => {
     await fetch('/api/plan', {
       method: 'POST',
@@ -197,7 +215,6 @@ export default function PlanPage() {
           const entry = getPlanEntry(dayIdx)
           const excluded = excludedDays[dayIdx] ?? entry?.status
           const isToday = isCurrentWeek && new Date().getDay() === (dayIdx === 6 ? 0 : dayIdx + 1)
-          const suggestion = suggestions[selectedDays.filter(d => !excludedDays[d]).indexOf(dayIdx)]
 
           return (
             <div
@@ -215,22 +232,22 @@ export default function PlanPage() {
                     <span className="text-sm text-stone-500">🍕 Spiser ude</span>
                   ) : excluded === 'no_cooking' ? (
                     <span className="text-sm text-stone-500">✋ Ingen madlavning</span>
+                  ) : entry?.is_leftover ? (
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs bg-amber-50 text-amber-600 border border-amber-100 px-1.5 py-0.5 rounded-full font-medium">🥘 Rester</span>
+                        <span className="font-medium text-stone-700 text-sm truncate">{entry.meal_name}</span>
+                      </div>
+                      {entry.meal_description && (
+                        <div className="text-xs text-stone-400 mt-0.5">{entry.meal_description}</div>
+                      )}
+                    </div>
                   ) : entry?.meal_name ? (
                     <div>
                       <div className="font-medium text-stone-800 text-sm truncate">{entry.meal_name}</div>
                       {entry.meal_prep_time && (
                         <div className="flex items-center gap-1 text-xs text-stone-400 mt-0.5">
                           <Clock size={11} /> {entry.meal_prep_time} min
-                        </div>
-                      )}
-                    </div>
-                  ) : suggestion && !excluded ? (
-                    <div>
-                      <div className="text-xs text-orange-500 font-medium mb-0.5">AI-forslag</div>
-                      <div className="font-medium text-stone-800 text-sm truncate">{suggestion.name}</div>
-                      {suggestion.prep_time && (
-                        <div className="flex items-center gap-1 text-xs text-stone-400 mt-0.5">
-                          <Clock size={11} /> {suggestion.prep_time} min
                         </div>
                       )}
                     </div>
@@ -250,13 +267,6 @@ export default function PlanPage() {
                     >
                       <Check size={16} />
                     </button>
-                  ) : suggestion && !excluded ? (
-                    <button
-                      onClick={() => acceptSuggestion(dayIdx, suggestion)}
-                      className="text-xs bg-orange-50 text-orange-600 px-2.5 py-1.5 rounded-lg font-medium hover:bg-orange-100 transition-colors"
-                    >
-                      Vælg
-                    </button>
                   ) : null}
 
                   <button
@@ -270,13 +280,7 @@ export default function PlanPage() {
 
               {/* Expanded panel */}
               {activeDay === dayIdx && (() => {
-                const activeMeal = entry?.meal_name ? entry : suggestion ? {
-                  meal_name: suggestion.name,
-                  meal_description: suggestion.description,
-                  meal_ingredients: JSON.stringify(suggestion.ingredients),
-                  meal_prep_time: suggestion.prep_time,
-                  meal_image_url: suggestion.image_url,
-                } : null
+                const activeMeal = entry?.meal_name ? entry : null
 
                 const ingredients: string[] = (() => {
                   try { return JSON.parse(activeMeal?.meal_ingredients || '[]') } catch { return [] }
@@ -354,7 +358,7 @@ export default function PlanPage() {
                         )}
 
                         {/* Ekstern opskriftslink */}
-                        {activeMeal.meal_name && (
+                        {activeMeal.meal_name && !entry?.is_leftover && (
                           <a
                             href={`https://www.google.com/search?q=${encodeURIComponent(activeMeal.meal_name + ' opskrift')}`}
                             target="_blank"
@@ -364,6 +368,30 @@ export default function PlanPage() {
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                             Søg opskrift på Google
                           </a>
+                        )}
+
+                        {/* Rester til næste dag */}
+                        {entry?.meal_name && !entry.is_leftover && entry.status === 'planned' && dayIdx < 6 && (
+                          <div className="pt-1 border-t border-stone-100">
+                            {getPlanEntry(dayIdx + 1)?.is_leftover ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-amber-600">🥘 Rester planlagt til {DAY_NAMES[dayIdx + 1]}</span>
+                                <button
+                                  onClick={() => setDayStatus(dayIdx + 1, null)}
+                                  className="text-xs text-red-400 hover:text-red-500"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </div>
+                            ) : !getPlanEntry(dayIdx + 1)?.meal_name ? (
+                              <button
+                                onClick={() => setLeftover(dayIdx, entry.meal_name!)}
+                                className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-amber-600 transition-colors"
+                              >
+                                🥘 Rester strækker til {DAY_NAMES[dayIdx + 1]}
+                              </button>
+                            ) : null}
+                          </div>
                         )}
                       </div>
                     )}
@@ -385,35 +413,62 @@ export default function PlanPage() {
             </button>
           </div>
           <div className="divide-y divide-stone-100">
-            {suggestions.map((s, i) => {
-              const targetDay = selectedDays.filter(d => !excludedDays[d])[i]
-              return (
-                <div key={i} className="p-4 flex gap-3">
+            {suggestions.map((s, i) => (
+              <div key={i} className="p-4">
+                <div className="flex gap-3">
                   {s.image_url ? (
-                    <img src={s.image_url} alt={s.name} className="w-16 h-16 object-cover rounded-xl shrink-0" />
+                    <a href={s.image_url} target="_blank" rel="noopener noreferrer" className="shrink-0">
+                      <img src={s.image_url} alt={s.name} className="w-16 h-16 object-cover rounded-xl hover:opacity-90 transition-opacity" />
+                    </a>
                   ) : (
                     <div className="w-16 h-16 bg-orange-50 rounded-xl flex items-center justify-center shrink-0 text-2xl">🍽️</div>
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-stone-800">{s.name}</div>
-                    <div className="text-xs text-stone-500 mt-0.5 line-clamp-2">{s.description}</div>
-                    <div className="flex items-center gap-3 mt-1.5">
+                    <div className="text-xs text-stone-500 mt-0.5 leading-relaxed">{s.description}</div>
+                    <div className="flex flex-wrap items-center gap-2 mt-1.5">
                       {s.prep_time && <span className="text-xs text-stone-400"><Clock size={10} className="inline mr-0.5" />{s.prep_time} min</span>}
-                      {s.uses_inventory && <span className="text-xs text-green-600 font-medium">✓ Bruger lager</span>}
+                      {s.uses_inventory && (
+                        <span className="text-xs bg-green-50 text-green-600 border border-green-100 px-1.5 py-0.5 rounded-full font-medium">
+                          ✓ Bruger lager
+                        </span>
+                      )}
                     </div>
                     {s.ingredients.length > 0 && (
-                      <div className="text-xs text-stone-400 mt-1 truncate">{s.ingredients.slice(0, 4).join(', ')}{s.ingredients.length > 4 ? '...' : ''}</div>
+                      <div className="text-xs text-stone-400 mt-1">{s.ingredients.join(', ')}</div>
                     )}
                   </div>
-                  <button
-                    onClick={() => acceptSuggestion(targetDay, s)}
-                    className="shrink-0 text-xs bg-orange-50 text-orange-600 px-3 py-1.5 rounded-lg font-medium hover:bg-orange-100 self-start"
-                  >
-                    Vælg til {DAY_SHORT[targetDay]}
-                  </button>
                 </div>
-              )
-            })}
+
+                {/* Dag-vælger */}
+                <div className="mt-3 pt-3 border-t border-stone-50">
+                  <div className="text-xs text-stone-400 mb-2">Planlæg til dag:</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {DAY_SHORT.map((label, dayIdx) => {
+                      const dayEntry = getPlanEntry(dayIdx)
+                      const isExcluded = !!(excludedDays[dayIdx] || dayEntry?.status === 'eaten_out' || dayEntry?.status === 'no_cooking')
+                      const hasMeal = !!(dayEntry?.meal_name)
+                      const isDisabled = isExcluded || hasMeal
+                      return (
+                        <button
+                          key={dayIdx}
+                          disabled={isDisabled}
+                          onClick={() => { acceptSuggestion(dayIdx, s); setSuggestions(prev => prev.filter((_, j) => j !== i)) }}
+                          className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
+                            isDisabled
+                              ? 'bg-stone-100 text-stone-300 cursor-not-allowed'
+                              : 'bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white border border-orange-200'
+                          }`}
+                          title={isDisabled ? (hasMeal ? 'Dag har allerede en ret' : 'Dagen er markeret som ude/ingen madlavning') : `Tilføj til ${DAY_NAMES[dayIdx]}`}
+                        >
+                          {label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
           <div className="px-4 py-3 border-t border-stone-100">
             <button onClick={handleGetSuggestions} className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-700">
