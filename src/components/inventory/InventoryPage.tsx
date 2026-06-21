@@ -36,6 +36,7 @@ export default function InventoryPage() {
   const [editItem, setEditItem] = useState<InventoryItem | null>(null)
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ name: '', category: 'andet', quantity: '', note: '' })
+  const [formLocation, setFormLocation] = useState<'pantry' | 'freezer'>('pantry')
   const [barcodeInput, setBarcodeInput] = useState('')
   const [barcodeLoading, setBarcodeLoading] = useState(false)
   const [photoLoading, setPhotoLoading] = useState(false)
@@ -59,6 +60,7 @@ export default function InventoryPage() {
   const openAdd = () => {
     setEditItem(null)
     setForm({ name: '', category: 'andet', quantity: '', note: '' })
+    setFormLocation(location)
     setAddMode('manual')
     setBarcodeInput('')
     setShowAdd(true)
@@ -67,13 +69,14 @@ export default function InventoryPage() {
   const openEdit = (item: InventoryItem) => {
     setEditItem(item)
     setForm({ name: item.name, category: item.category, quantity: item.quantity || '', note: item.note || '' })
+    setFormLocation(item.location)
     setAddMode('manual')
     setShowAdd(true)
   }
 
   const handleSubmit = async () => {
     if (!form.name.trim()) return
-    const payload = { ...form, location }
+    const payload = { ...form, location: formLocation }
     if (editItem) {
       await fetch(`/api/inventory/${editItem.id}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
@@ -334,9 +337,9 @@ export default function InventoryPage() {
                   {(['pantry', 'freezer'] as const).map(loc => (
                     <button
                       key={loc}
-                      onClick={() => {}}
+                      onClick={() => setFormLocation(loc)}
                       className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
-                        location === loc ? 'border-orange-400 bg-orange-50 text-orange-600' : 'border-stone-200 text-stone-500'
+                        formLocation === loc ? 'border-orange-400 bg-orange-50 text-orange-600' : 'border-stone-200 text-stone-500'
                       }`}
                     >
                       {loc === 'pantry' ? 'Spisekammer' : 'Fryser'}
