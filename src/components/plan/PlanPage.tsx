@@ -392,24 +392,24 @@ export default function PlanPage() {
                         )}
 
                         {/* Rester til næste dag */}
-                        {entry?.meal_name && !entry.is_leftover && entry.status === 'planned' && dayIdx < 6 && (
-                          <div className="pt-1 border-t border-stone-100">
+                        {entry?.meal_name && !entry.is_leftover && dayIdx < 6 && (
+                          <div className="pt-2 border-t border-stone-100">
                             {getPlanEntry(dayIdx + 1)?.is_leftover ? (
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-amber-600">🥘 Rester planlagt til {DAY_NAMES[dayIdx + 1]}</span>
+                              <div className="flex items-center justify-between bg-amber-50 rounded-lg px-3 py-2">
+                                <span className="text-xs text-amber-700 font-medium">🥘 Rester planlagt til {DAY_NAMES[dayIdx + 1]}</span>
                                 <button
                                   onClick={() => setDayStatus(dayIdx + 1, null)}
-                                  className="text-xs text-red-400 hover:text-red-500"
+                                  className="text-amber-400 hover:text-red-500 ml-2"
                                 >
-                                  <X size={12} />
+                                  <X size={13} />
                                 </button>
                               </div>
                             ) : !getPlanEntry(dayIdx + 1)?.meal_name ? (
                               <button
                                 onClick={() => setLeftover(dayIdx, entry.meal_name!)}
-                                className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-amber-600 transition-colors"
+                                className="w-full flex items-center justify-center gap-1.5 text-xs text-stone-500 bg-stone-50 hover:bg-amber-50 hover:text-amber-700 border border-stone-100 hover:border-amber-200 rounded-lg px-3 py-2 transition-colors"
                               >
-                                🥘 Rester strækker til {DAY_NAMES[dayIdx + 1]}
+                                🥘 Retter strækker sig — sæt rester til {DAY_NAMES[dayIdx + 1]}
                               </button>
                             ) : null}
                           </div>
