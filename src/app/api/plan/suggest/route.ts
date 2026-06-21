@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { GoogleGenAI } from '@google/genai'
+import { Mistral } from '@mistralai/mistralai'
 
 export async function POST(req: NextRequest) {
   const db = getDb()
@@ -9,8 +9,10 @@ export async function POST(req: NextRequest) {
 
   const getS = (key: string) => (db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined)?.value ?? ''
 
-  const apiKey = getS('gemini_api_key')
-  if (!apiKey) return NextResponse.json({ error: 'Gemini API-nøgle mangler i indstillinger' }, { status: 400 })
+  const apiKey = getS('mistral_api_key')
+  if (!apiKey) return NextResponse.json({ error: 'Mistral API-nøgle mangler i indstillinger' }, { status: 400 })
+
+  const model = getS('mistral_model') || 'mistral-small-latest'
 
   const inventory = db.prepare(`
     SELECT name, category, quantity, location FROM inventory_items
@@ -58,7 +60,7 @@ ${recentHistory.length > 0 ? recentHistory.map(h => `- ${h.meal_name} (${h.made_
 FAVORITTER (forsøg at inkludere 1-2):
 ${favorites.length > 0 ? favorites.map(f => `- ${f.name} (${f.avg_rating.toFixed(1)}★)`).join('\n') : 'Ingen favoritter endnu'}
 
-Returnér præcis et JSON-array med ${days} retter i dette format:
+Returnér præcis et JSON-array med ${days} retter i dette format (ingen markdown, kun JSON):
 [
   {
     "name": "Rettens navn",
@@ -72,15 +74,15 @@ Returnér præcis et JSON-array med ${days} retter i dette format:
 Prioritér retter der bruger det der allerede er på lager. Varier mellem hurtige hverdagsretter og lidt mere festlige retter til weekend. Alle navne og tekster skal være på dansk.`
 
   try {
-    const ai = new GoogleGenAI({ apiKey })
-    const response = await ai.models.generateContent({
-      model: getS('gemini_model') || 'gemini-2.0-flash',
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    const client = new Mistral({ apiKey })
+    const response = await client.chat.complete({
+      model,
+      messages: [{ role: 'user', content: prompt }],
     })
 
-    const text = response.text ?? ''
+    const text = (response.choices?.[0]?.message?.content as string) ?? ''
     const jsonMatch = text.match(/\[[\s\S]*\]/)
-    if (!jsonMatch) throw new Error('Kunne ikke parse svar fra Gemini')
+    if (!jsonMatch) throw new Error('Kunne ikke parse svar fra Mistral')
 
     const suggestions = JSON.parse(jsonMatch[0])
 
@@ -105,10 +107,9 @@ Prioritér retter der bruger det der allerede er på lager. Varier mellem hurtig
     return NextResponse.json({ suggestions: enriched })
   } catch (e) {
     const msg = String(e)
-    const isQuota = msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota')
-    const friendlyError = isQuota
-      ? 'Gemini kvote overskredet. Brug en nøgle fra aistudio.google.com (ikke Google Cloud Console) for gratis adgang.'
-      : msg
-    return NextResponse.json({ error: friendlyError }, { status: isQuota ? 429 : 500 })
+    const isQuota = msg.includes('429') || msg.includes('quota') || msg.includes('rate')
+    return NextResponse.json({
+      error: isQuota ? 'Mistral rate limit nået. Prøv igen om lidt.' : msg
+    }, { status: isQuota ? 429 : 500 })
   }
 }

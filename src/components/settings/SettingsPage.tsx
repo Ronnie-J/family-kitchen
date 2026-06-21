@@ -120,13 +120,13 @@ export default function SettingsPage() {
         <section className="bg-white rounded-2xl border border-stone-100 p-5">
           <h2 className="font-semibold text-stone-800 mb-4">🤖 AI-indstillinger</h2>
           <div className="mb-3">
-            <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Gemini API-nøgle</label>
+            <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Mistral API-nøgle</label>
             <div className="relative mt-1">
               <input
                 type={showKey ? 'text' : 'password'}
-                value={settings.gemini_api_key || ''}
-                onChange={e => set('gemini_api_key', e.target.value)}
-                placeholder="AIza..."
+                value={settings.mistral_api_key || ''}
+                onChange={e => set('mistral_api_key', e.target.value)}
+                placeholder="..."
                 className="w-full border border-stone-200 rounded-xl px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 font-mono"
               />
               <button onClick={() => setShowKey(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400">
@@ -134,20 +134,20 @@ export default function SettingsPage() {
               </button>
             </div>
             <p className="text-xs text-stone-400 mt-1">
-              Gratis nøgle: <span className="font-medium">aistudio.google.com</span> → "Get API key" (brug ikke Google Cloud Console — giver kvote-fejl).
+              Gratis nøgle: <span className="font-medium">console.mistral.ai</span> → API Keys. Virker i EU. Fotoanalyse bruger Pixtral-12B.
             </p>
           </div>
           <div>
-            <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Gemini-model</label>
+            <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Mistral-model (AI-forslag)</label>
             <select
-              value={settings.gemini_model || 'gemini-2.0-flash'}
-              onChange={e => set('gemini_model', e.target.value)}
+              value={settings.mistral_model || 'mistral-small-latest'}
+              onChange={e => set('mistral_model', e.target.value)}
               className="w-full mt-1 border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
             >
-              <option value="gemini-2.0-flash">gemini-2.0-flash (anbefalet)</option>
-              <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite (hurtigst)</option>
-              <option value="gemini-1.5-flash">gemini-1.5-flash</option>
-              <option value="gemini-1.5-pro">gemini-1.5-pro (bedst, men langsommere)</option>
+              <option value="mistral-small-latest">mistral-small-latest (anbefalet, gratis)</option>
+              <option value="open-mistral-nemo">open-mistral-nemo (gratis, lille)</option>
+              <option value="mistral-medium-latest">mistral-medium-latest (betalt, bedre)</option>
+              <option value="mistral-large-latest">mistral-large-latest (betalt, bedst)</option>
             </select>
           </div>
           <div>
