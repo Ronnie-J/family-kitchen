@@ -103,7 +103,7 @@ function initSchema(db: Database.Database) {
       ('allergies', ''),
       ('kitchen_type', 'blandet'),
       ('ai_preferences', 'Vi kan lide varieret mad. Børnene er lidt kræsne. Vi foretrækker retter der kan laves på under en time på hverdage.'),
-      ('anthropic_api_key', ''),
+      ('gemini_api_key', ''),
       ('unsplash_access_key', ''),
       ('telegram_bot_token', ''),
       ('telegram_chat_id', ''),

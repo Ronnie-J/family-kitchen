@@ -8,7 +8,7 @@ const TAG_LABELS: Record<string, string> = {
   børnevenlig: '👶 Børnevenlig',
   hurtig: '⚡ Hurtig',
   søndagsret: '☀️ Søndagsret',
-  ny_favorit: '❤️ Favorit',
+  ny_favorit: '❤️ Ny favorit',
   ikke_igen: '🚫 Ikke igen',
   vegetarisk: '🌱 Vegetarisk',
   festret: '🎉 Festret',

@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenAI } from '@google/genai'
 
 export async function POST(req: NextRequest) {
   const db = getDb()
   const body = await req.json()
-  const { days = 5, excluded_days = [] } = body
+  const { days = 5 } = body
 
   const getS = (key: string) => (db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined)?.value ?? ''
 
-  const apiKey = getS('anthropic_api_key')
-  if (!apiKey) return NextResponse.json({ error: 'Anthropic API-nøgle mangler i indstillinger' }, { status: 400 })
+  const apiKey = getS('gemini_api_key')
+  if (!apiKey) return NextResponse.json({ error: 'Gemini API-nøgle mangler i indstillinger' }, { status: 400 })
 
   const inventory = db.prepare(`
     SELECT name, category, quantity, location FROM inventory_items
@@ -23,10 +23,10 @@ export async function POST(req: NextRequest) {
   `).all() as { meal_name: string; made_at: string; stars: number }[]
 
   const favorites = db.prepare(`
-    SELECT name, description, avg_rating, ingredients FROM meals
+    SELECT name, description, avg_rating FROM meals
     WHERE is_favorite = 1 AND exclude_from_suggestions = 0
     ORDER BY avg_rating DESC LIMIT 10
-  `).all() as { name: string; description: string; avg_rating: number; ingredients: string }[]
+  `).all() as { name: string; description: string; avg_rating: number }[]
 
   const adults = getS('family_adults')
   const children = getS('family_children')
@@ -69,21 +69,18 @@ Returnér præcis et JSON-array med ${days} retter i dette format:
   }
 ]
 
-Prioritér retter der bruger det der allerede er på lager. Varier between hurtige hverdagsretter og lidt mere festlige retter til weekend. Alle navne og tekster skal være på dansk.`
+Prioritér retter der bruger det der allerede er på lager. Varier mellem hurtige hverdagsretter og lidt mere festlige retter til weekend. Alle navne og tekster skal være på dansk.`
 
   try {
-    const client = new Anthropic({ apiKey })
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
-      messages: [{ role: 'user', content: prompt }],
+    const ai = new GoogleGenAI({ apiKey })
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
     })
 
-    const content = message.content[0]
-    if (content.type !== 'text') throw new Error('Uventet svar fra AI')
-
-    const jsonMatch = content.text.match(/\[[\s\S]*\]/)
-    if (!jsonMatch) throw new Error('Kunne ikke parse AI-svar')
+    const text = response.text ?? ''
+    const jsonMatch = text.match(/\[[\s\S]*\]/)
+    if (!jsonMatch) throw new Error('Kunne ikke parse svar fra Gemini')
 
     const suggestions = JSON.parse(jsonMatch[0])
 

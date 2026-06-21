@@ -120,20 +120,20 @@ export default function SettingsPage() {
         <section className="bg-white rounded-2xl border border-stone-100 p-5">
           <h2 className="font-semibold text-stone-800 mb-4">🤖 AI-indstillinger</h2>
           <div className="mb-3">
-            <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Anthropic API-nøgle</label>
+            <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Gemini API-nøgle</label>
             <div className="relative mt-1">
               <input
                 type={showKey ? 'text' : 'password'}
-                value={settings.anthropic_api_key || ''}
-                onChange={e => set('anthropic_api_key', e.target.value)}
-                placeholder="sk-ant-..."
+                value={settings.gemini_api_key || ''}
+                onChange={e => set('gemini_api_key', e.target.value)}
+                placeholder="AIza..."
                 className="w-full border border-stone-200 rounded-xl px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 font-mono"
               />
               <button onClick={() => setShowKey(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400">
                 {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
-            <p className="text-xs text-stone-400 mt-1">Bruges til AI-madforslag og fotoanalyse. Gemmes kun lokalt.</p>
+            <p className="text-xs text-stone-400 mt-1">Bruges til AI-madforslag og fotoanalyse. Opret gratis nøgle på <span className="font-medium">aistudio.google.com</span>. Gemmes kun lokalt.</p>
           </div>
           <div>
             <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Madpræferencer til AI</label>
