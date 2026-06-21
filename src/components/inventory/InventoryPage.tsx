@@ -5,8 +5,23 @@ import { Plus, Search, Trash2, Edit3, Snowflake, Package, X, Camera, Barcode, Ch
 import type { InventoryItem } from '@/lib/db'
 
 const CATEGORIES = ['kød', 'fisk', 'grønt', 'mejeri', 'desserter', 'andet'] as const
-const CATEGORY_EMOJI: Record<string, string> = {
-  kød: '🥩', fisk: '🐟', grønt: '🥦', mejeri: '🧀', desserter: '🍰', andet: '🥫',
+const CATEGORY_COLORS: Record<string, string> = {
+  kød:      'bg-red-100 text-red-700',
+  fisk:     'bg-blue-100 text-blue-700',
+  grønt:    'bg-green-100 text-green-700',
+  mejeri:   'bg-yellow-100 text-yellow-700',
+  desserter:'bg-pink-100 text-pink-700',
+  andet:    'bg-stone-100 text-stone-600',
+}
+
+function CategoryBadge({ category }: { category: string }) {
+  const colors = CATEGORY_COLORS[category] ?? CATEGORY_COLORS.andet
+  const label = category.charAt(0).toUpperCase() + category.slice(1)
+  return (
+    <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${colors}`}>
+      {label}
+    </span>
+  )
 }
 
 type AddMode = 'manual' | 'barcode' | 'photo'
@@ -156,7 +171,7 @@ export default function InventoryPage() {
           className="bg-white border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
         >
           <option value="alle">Alle</option>
-          {CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_EMOJI[c]} {c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+          {CATEGORIES.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
         </select>
       </div>
 
@@ -175,13 +190,15 @@ export default function InventoryPage() {
             const warn = (location === 'freezer' && old > 90) || (location === 'pantry' && old > 30)
             return (
               <div key={item.id} className={`bg-white rounded-xl border ${warn ? 'border-amber-200' : 'border-stone-100'} p-3.5 flex items-center gap-3`}>
-                <span className="text-xl w-8 text-center">{CATEGORY_EMOJI[item.category] || '🥫'}</span>
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-stone-800 truncate">{item.name}</div>
-                  <div className="flex items-center gap-2 mt-0.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-stone-800">{item.name}</span>
+                    <CategoryBadge category={item.category} />
+                  </div>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
                     {item.quantity && <span className="text-xs text-stone-500">{item.quantity}</span>}
-                    {item.note && <span className="text-xs text-stone-400 italic truncate">{item.note}</span>}
-                    {warn && <span className="text-xs text-amber-500 font-medium">⚠️ {old} dage gammel</span>}
+                    {item.note && <span className="text-xs text-stone-400 italic">{item.note}</span>}
+                    {warn && <span className="text-xs text-amber-600 font-medium">⚠ {old} dage gammel</span>}
                   </div>
                 </div>
                 <div className="flex gap-1">
@@ -287,7 +304,7 @@ export default function InventoryPage() {
                   onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
                   className="w-full mt-1 border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
                 >
-                  {CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_EMOJI[c]} {c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+                  {CATEGORIES.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
                 </select>
               </div>
 
@@ -322,7 +339,7 @@ export default function InventoryPage() {
                         location === loc ? 'border-orange-400 bg-orange-50 text-orange-600' : 'border-stone-200 text-stone-500'
                       }`}
                     >
-                      {loc === 'pantry' ? '🏠 Spisekammer' : '❄️ Fryser'}
+                      {loc === 'pantry' ? 'Spisekammer' : 'Fryser'}
                     </button>
                   ))}
                 </div>
