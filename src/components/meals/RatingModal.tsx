@@ -15,14 +15,16 @@ const TAGS = [
 type Props = {
   mealId: number
   mealName: string
+  initialStars?: number
+  initialTags?: string[]
   onClose: () => void
   onSaved: () => void
 }
 
-export default function RatingModal({ mealId, mealName, onClose, onSaved }: Props) {
-  const [stars, setStars] = useState(0)
+export default function RatingModal({ mealId, mealName, initialStars = 0, initialTags = [], onClose, onSaved }: Props) {
+  const [stars, setStars] = useState(initialStars)
   const [hovered, setHovered] = useState(0)
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [selectedTags, setSelectedTags] = useState<string[]>(initialTags)
   const [saving, setSaving] = useState(false)
 
   const toggleTag = (id: string) => {
@@ -33,12 +35,14 @@ export default function RatingModal({ mealId, mealName, onClose, onSaved }: Prop
     }
   }
 
+  const isEditing = initialStars > 0
+
   const handleSave = async () => {
     setSaving(true)
     await fetch(`/api/meals/${mealId}/rate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stars, tags: selectedTags, mark_as_made: true }),
+      body: JSON.stringify({ stars, tags: selectedTags, mark_as_made: !isEditing }),
     })
     setSaving(false)
     onSaved()

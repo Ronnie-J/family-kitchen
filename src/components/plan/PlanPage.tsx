@@ -76,7 +76,7 @@ export default function PlanPage() {
   const [selectedDays, setSelectedDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6])
   const [excludedDays, setExcludedDays] = useState<Record<number, 'eaten_out' | 'no_cooking' | null>>({})
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const [ratingMeal, setRatingMeal] = useState<{ id: number; name: string } | null>(null)
+  const [ratingMeal, setRatingMeal] = useState<{ id: number; name: string; initialStars?: number; initialTags?: string[] } | null>(null)
   const [activeDay, setActiveDay] = useState<number | null>(null)
   const [twoDaySuggestions, setTwoDaySuggestions] = useState<Set<number>>(new Set())
   const [scaling, setScaling] = useState<number | null>(null)
@@ -482,8 +482,13 @@ export default function PlanPage() {
                         {/* Rating og badges */}
                         <MealRatingBadges
                           avgRating={activeMeal.meal_avg_rating}
-                          ratingCount={activeMeal.meal_rating_count}
                           tags={activeMeal.meal_tags}
+                          onEdit={activeMeal.meal_id ? () => setRatingMeal({
+                            id: activeMeal.meal_id!,
+                            name: activeMeal.meal_name!,
+                            initialStars: Math.round(activeMeal.meal_avg_rating ?? 0),
+                            initialTags: activeMeal.meal_tags ? activeMeal.meal_tags.split(',').filter(Boolean) : [],
+                          }) : undefined}
                         />
 
                         {/* Ingredienser */}
@@ -613,8 +618,13 @@ export default function PlanPage() {
                         <div className="mt-1.5">
                           <MealRatingBadges
                             avgRating={fav.avg_rating}
-                            ratingCount={fav.rating_count}
                             tags={fav.tags}
+                            onEdit={() => setRatingMeal({
+                              id: fav.id,
+                              name: fav.name,
+                              initialStars: Math.round(fav.avg_rating),
+                              initialTags: fav.tags ? fav.tags.split(',').filter(Boolean) : [],
+                            })}
                           />
                         </div>
                         {fav.description && (
@@ -806,6 +816,8 @@ export default function PlanPage() {
         <RatingModal
           mealId={ratingMeal.id}
           mealName={ratingMeal.name}
+          initialStars={ratingMeal.initialStars}
+          initialTags={ratingMeal.initialTags}
           onClose={() => setRatingMeal(null)}
           onSaved={() => { setRatingMeal(null); load() }}
         />

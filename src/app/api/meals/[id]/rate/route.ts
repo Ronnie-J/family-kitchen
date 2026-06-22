@@ -17,22 +17,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   )
 
   if (stars && stars >= 1 && stars <= 5) {
+    db.prepare(`DELETE FROM meal_ratings WHERE meal_id = ?`).run(id)
     db.prepare(`INSERT INTO meal_ratings (meal_id, stars, tags) VALUES (?, ?, ?)`).run(id, stars, JSON.stringify(tags))
-
-    const newCount = meal.rating_count + 1
-    const newAvg = (meal.avg_rating * meal.rating_count + stars) / newCount
 
     const isFavorite = stars >= minStars ? 1 : undefined
     const exclude = tags.includes('ikke_igen') ? 1 : undefined
 
     db.prepare(`
       UPDATE meals SET
-        avg_rating = ?, rating_count = ?,
+        avg_rating = ?, rating_count = 1,
         is_favorite = COALESCE(?, is_favorite),
         exclude_from_suggestions = COALESCE(?, exclude_from_suggestions),
         last_made_at = CASE WHEN ? = 1 THEN datetime('now', 'localtime') ELSE last_made_at END
       WHERE id = ?
-    `).run(newAvg, newCount, isFavorite ?? null, exclude ?? null, mark_as_made ? 1 : 0, id)
+    `).run(stars, isFavorite ?? null, exclude ?? null, mark_as_made ? 1 : 0, id)
   }
 
   if (mark_as_made) {

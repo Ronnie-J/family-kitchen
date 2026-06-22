@@ -1,6 +1,8 @@
 'use client'
 
-const TAG_LABELS: Record<string, string> = {
+import { Pencil } from 'lucide-react'
+
+export const TAG_LABELS: Record<string, string> = {
   børnevenlig: '👶 Børnevenlig',
   hurtig: '⚡ Under 30 min',
   søndagsret: '☀️ Søndagsret',
@@ -11,12 +13,13 @@ const TAG_LABELS: Record<string, string> = {
 
 type Props = {
   avgRating: number | null
-  ratingCount: number | null
+  ratingCount?: number | null
   tags: string | null
+  onEdit?: () => void
 }
 
-export default function MealRatingBadges({ avgRating, ratingCount, tags }: Props) {
-  if (!avgRating && !tags) return null
+export default function MealRatingBadges({ avgRating, tags, onEdit }: Props) {
+  if (!avgRating && !tags && !onEdit) return null
 
   const stars = Math.round(avgRating ?? 0)
   const tagList = tags ? tags.split(',').filter(t => t && TAG_LABELS[t]) : []
@@ -25,8 +28,7 @@ export default function MealRatingBadges({ avgRating, ratingCount, tags }: Props
     <div className="flex flex-wrap items-center gap-1.5">
       {avgRating && avgRating > 0 ? (
         <span className="flex items-center gap-1 text-xs bg-amber-50 border border-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
-          {'★'.repeat(stars)}{'☆'.repeat(5 - stars)} {avgRating.toFixed(1)}
-          {ratingCount && ratingCount > 0 ? <span className="text-amber-400 font-normal">({ratingCount})</span> : null}
+          {'★'.repeat(stars)}{'☆'.repeat(5 - stars)}
         </span>
       ) : null}
       {tagList.map(tag => (
@@ -41,6 +43,15 @@ export default function MealRatingBadges({ avgRating, ratingCount, tags }: Props
           {TAG_LABELS[tag]}
         </span>
       ))}
+      {onEdit && (
+        <button
+          onClick={onEdit}
+          className="p-1 rounded hover:bg-stone-100 text-stone-300 hover:text-stone-500 transition-colors"
+          title="Ret bedømmelse"
+        >
+          <Pencil size={11} />
+        </button>
+      )}
     </div>
   )
 }
