@@ -8,7 +8,18 @@ export async function GET(req: NextRequest) {
   const week = weekParam || getWeekStart()
 
   const plan = db.prepare(`
-    SELECT * FROM weekly_plan WHERE week_start = ? ORDER BY day_of_week
+    SELECT wp.*,
+      m.avg_rating  AS meal_avg_rating,
+      m.rating_count AS meal_rating_count,
+      (
+        SELECT GROUP_CONCAT(DISTINCT tag.value)
+        FROM meal_ratings mr, json_each(mr.tags) AS tag
+        WHERE mr.meal_id = wp.meal_id AND tag.value != ''
+      ) AS meal_tags
+    FROM weekly_plan wp
+    LEFT JOIN meals m ON wp.meal_id = m.id
+    WHERE wp.week_start = ?
+    ORDER BY wp.day_of_week
   `).all(week)
 
   return NextResponse.json({ week_start: week, plan })

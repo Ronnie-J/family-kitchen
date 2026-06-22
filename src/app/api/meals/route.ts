@@ -3,10 +3,19 @@ import { getDb } from '@/lib/db'
 
 export async function GET(req: NextRequest) {
   const db = getDb()
-  const favorites = req.nextUrl.searchParams.get('favorites')
-  const query = favorites
-    ? 'SELECT * FROM meals WHERE exclude_from_suggestions = 0 AND is_favorite = 1 ORDER BY avg_rating DESC, name'
-    : 'SELECT * FROM meals ORDER BY avg_rating DESC, name'
+  const favOnly = req.nextUrl.searchParams.get('favorites')
+  const where = favOnly ? 'WHERE m.exclude_from_suggestions = 0 AND m.is_favorite = 1' : ''
+  const query = `
+    SELECT m.*,
+      (
+        SELECT GROUP_CONCAT(DISTINCT tag.value)
+        FROM meal_ratings mr, json_each(mr.tags) AS tag
+        WHERE mr.meal_id = m.id AND tag.value != ''
+      ) AS tags
+    FROM meals m
+    ${where}
+    ORDER BY m.avg_rating DESC, m.name
+  `
   return NextResponse.json(db.prepare(query).all())
 }
 

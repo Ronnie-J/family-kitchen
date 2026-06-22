@@ -6,6 +6,7 @@ import type { WeeklyPlanEntry } from '@/lib/db'
 import RatingModal from '@/components/meals/RatingModal'
 import InlineListEditor from '@/components/plan/InlineListEditor'
 import AddMealForm from '@/components/plan/AddMealForm'
+import MealRatingBadges from '@/components/plan/MealRatingBadges'
 
 const DAY_NAMES = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag']
 const DAY_SHORT = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn']
@@ -57,6 +58,7 @@ type FavoriteMeal = {
   avg_rating: number
   rating_count: number
   image_url: string | null
+  tags: string | null
 }
 
 export default function PlanPage() {
@@ -477,6 +479,13 @@ export default function PlanPage() {
                           <p className="text-sm text-stone-600 leading-relaxed">{activeMeal.meal_description}</p>
                         )}
 
+                        {/* Rating og badges */}
+                        <MealRatingBadges
+                          avgRating={activeMeal.meal_avg_rating}
+                          ratingCount={activeMeal.meal_rating_count}
+                          tags={activeMeal.meal_tags}
+                        />
+
                         {/* Ingredienser */}
                         {(ingredients.length > 0 || !activeMeal.is_leftover) && (
                           <InlineListEditor
@@ -599,9 +608,14 @@ export default function PlanPage() {
                           </button>
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-xs text-amber-500">{'★'.repeat(avgStars)}{'☆'.repeat(5 - avgStars)}</span>
-                          <span className="text-xs text-stone-400">({fav.rating_count} bedømmelser)</span>
                           {fav.prep_time && <span className="text-xs text-stone-400"><Clock size={10} className="inline mr-0.5" />{fav.prep_time} min</span>}
+                        </div>
+                        <div className="mt-1.5">
+                          <MealRatingBadges
+                            avgRating={fav.avg_rating}
+                            ratingCount={fav.rating_count}
+                            tags={fav.tags}
+                          />
                         </div>
                         {fav.description && (
                           <p className="text-xs text-stone-500 mt-1 leading-relaxed">{fav.description}</p>

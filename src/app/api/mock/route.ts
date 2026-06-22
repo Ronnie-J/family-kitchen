@@ -108,6 +108,20 @@ export async function POST() {
     mealIds.push(result.lastInsertRowid as number)
   }
 
+  // Meal ratings (med tags)
+  const mealTagSets = [
+    ['børnevenlig', 'hurtig'],
+    ['børnevenlig', 'søndagsret'],
+    ['hurtig'],
+    ['børnevenlig', 'festret'],
+    ['søndagsret'],
+    ['vegetarisk'],
+  ]
+  const insertRating = db.prepare(`INSERT INTO meal_ratings (meal_id, stars, tags) VALUES (?, ?, ?)`)
+  for (let i = 0; i < meals.length; i++) {
+    insertRating.run(mealIds[i], Math.round(meals[i].avg_rating), JSON.stringify(mealTagSets[i] || []))
+  }
+
   // Meal history
   const insertHistory = db.prepare(`
     INSERT INTO meal_history (meal_id, meal_name, made_at, stars)

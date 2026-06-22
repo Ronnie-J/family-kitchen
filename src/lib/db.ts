@@ -170,6 +170,9 @@ export type WeeklyPlanEntry = {
   meal_recipe: string | null
   status: 'planned' | 'eaten_out' | 'no_cooking' | 'done'
   is_leftover: number
+  meal_avg_rating: number | null
+  meal_rating_count: number | null
+  meal_tags: string | null
 }
 
 export type ShoppingItem = {
