@@ -5,9 +5,11 @@ Dansk madplanlægnings-webapp til selvhosting. Planlæg ugens mad, hold styr på
 ## Funktioner
 
 - **Ugeplanlægning** — Planlæg alle 7 dage. Naviger frem/tilbage mellem uger. Markér dage som "Spiser ude" eller "Ingen madlavning". Støtte for retter der strækker sig til næste dag (rester).
-- **Favoritter** — Retter med høj bedømmelse gemmes automatisk som favoritter og kan planlægges direkte fra Ugeplaner uden at bruge AI.
-- **AI-madforslag** — Mistral AI genererer forslag med beskrivelse, ingredienser (skaleret til familiestørrelse) og trin-for-trin opskrift. Forslag tilpasses antal tomme dage og undgår retter lavet inden for de seneste 14 dage.
+- **Favoritter** — Retter med høj bedømmelse gemmes automatisk som favoritter og kan planlægges direkte fra Ugeplaner. Opret også egne opskrifter fra bunden direkte i Favoritter-panelet.
+- **Inline redigering** — Rediger ingredienser og fremgangsmåde direkte på stedet — på planlagte retter, AI-forslag og favoritter.
+- **AI-madforslag** — Mistral AI genererer forslag med beskrivelse, ingredienser (skaleret til familiestørrelse) og trin-for-trin opskrift. Tilpasses antal tomme dage og undgår retter lavet inden for de seneste 14 dage.
 - **2-dages retter** — Markér et AI-forslag som "Strækker sig over 2 dage". AI skalerer ingredienser op og næste dag sættes automatisk som rester.
+- **Bedømmelse** — Giv retter 1–5 stjerner og kategoribadges efter madlavning. Bedømmelsen erstattes ved ændring og vises på både planlagte retter og favoritter. Kan redigeres til enhver tid.
 - **Lager** — Fryser og spisekammer med farvede kategoribadges. Stregkodescanning via kamera. Billedgenkendelse via Mistral Vision (Pixtral-12B).
 - **Indkøbsliste** — Autogenereret fra ugeplanens ingredienser. Faste varer tilføjes automatisk.
 - **Madhistorik** — Alle retter du har lavet med dato og stjernebedømmelse.
@@ -53,7 +55,6 @@ docker compose -f docker-compose.dev.yml up --build -d
 
 Data gemmes i `./data-dev/`.
 
-Når du er færdig:
 ```bash
 docker compose -f docker-compose.dev.yml down
 ```
@@ -82,14 +83,21 @@ Alle indstillinger sættes i appen under **Indstillinger**:
 - Ugen starter mandag. Man kan navigere op til 2 uger frem og 2 uger tilbage.
 - En dag kan enten have en planlagt ret, være markeret "Spiser ude" eller "Ingen madlavning".
 - Rester: en ret kan markeres til at strække sig til næste dag. Næste dag vises som "🥘 Rester fra [dag]" uden egne ingredienser.
-- "Lavet"-knappen (✓) markerer retten som done og åbner bedømmelsesdialogen.
+- ✓-knappen markerer retten som lavet og åbner bedømmelsesdialogen. Retten forbliver i ugeplanen med "Lavet"-badge.
+
+### Bedømmelse
+- 1–5 stjerner og valgfrie kategoribadges: Børnevenlig, Under 30 min, Søndagsret, Vegetarisk, Festret, Ikke igen.
+- Der er præcis én bedømmelse per ret — en ny bedømmelse erstatter den tidligere.
+- Bedømmelsen kan redigeres til enhver tid via blyant-ikonet ved siden af stjernerne.
+- Rating og badges vises på planlagte retter (expanded panel) og i Favoritter.
 
 ### AI-forslag
 - Antal forslag = `max(2, antal tomme dage i ugen)` — aldrig færre end 2, aldrig mere end nødvendigt.
-- Undgår retter der er lavet inden for de **seneste 14 dage**.
+- Undgår retter lavet inden for de **seneste 14 dage**. Ældre retter kan frit foreslås igen.
 - Inkluderer familiens favoritter som inspiration (AI forsøger at inkludere 1–2).
 - Ingredienser skaleres præcist til antal personer (voksne + børn).
 - Hvert forslag indeholder navn, beskrivelse, tilberedningstid, ingredienser med mængder og fremgangsmåde i 4–8 trin.
+- Ingredienser og opskriftstrin kan redigeres direkte på forslagskortet inden retten planlægges.
 
 ### 2-dages retter
 - Toggle "Strækker sig over 2 dage?" på et AI-forslag inden du vælger dag.
@@ -97,9 +105,12 @@ Alle indstillinger sættes i appen under **Indstillinger**:
 - Dag 1 gemmes med de skalerede ingredienser. Dag 2 sættes automatisk som rester.
 
 ### Favoritter
-- Bedøm en ret med 4+ stjerner (konfigurerbart) → gemmes automatisk som favorit.
-- Favoritter vises i et panel øverst i Ugeplaner og kan planlægges direkte til en dag.
-- Fjern en ret fra favoritter via ✕ på favorit-kortet.
+- Bedøm en ret med 4+ stjerner (konfigurerbart i Indstillinger) → gemmes automatisk som favorit.
+- Favoritter vises i et kollapsibelt panel øverst i Ugeplaner og kan planlægges direkte til en dag.
+- Billede og opskrift fra AI-forslagene caches på retten og følger med ved planlægning fra Favoritter.
+- Opret egne opskrifter fra bunden via "**+ Opret opskrift**" — de gemmes direkte som favoritter.
+- Ingredienser og opskrift kan redigeres inline på alle favoritkort.
+- Fjern en ret fra favoritter via ✕ (sletter ikke retten, kun favoritstatus).
 
 ### Lager
 - To placeringer: fryser og spisekammer.
@@ -204,7 +215,7 @@ src/
 │   ├── inventory/
 │   ├── layout/            # AppLayout med navigation
 │   ├── meals/             # RatingModal
-│   ├── plan/              # PlanPage (ugeplanlægning + favoritter)
+│   ├── plan/              # PlanPage, InlineListEditor, AddMealForm, MealRatingBadges
 │   ├── settings/
 │   └── shopping/
 └── lib/
@@ -219,8 +230,8 @@ SQLite-fil på `/data/family-kitchen.db` (i container).
 | Tabel | Indhold |
 |-------|---------|
 | `inventory_items` | Lager- og frysevarer |
-| `meals` | Opskrifter med bedømmelse, favoritstatus og ekskluderingsflag |
-| `meal_ratings` | Individuelle bedømmelser med tags |
+| `meals` | Opskrifter med billede, opskrift, bedømmelse, favoritstatus og ekskluderingsflag |
+| `meal_ratings` | Bedømmelse med tags — præcis én per ret (erstattes ved ændring) |
 | `meal_history` | Historik over lavede retter |
 | `weekly_plan` | Ugeplaner med opskrift, ingredienser, fremgangsmåde og rester-flag |
 | `shopping_items` | Indkøbsliste (uge-tilknyttet + permanente) |
