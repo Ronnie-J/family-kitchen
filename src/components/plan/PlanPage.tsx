@@ -5,6 +5,7 @@ import { Sparkles, RefreshCw, Check, X, ChevronRight, ChevronLeft, Clock, Utensi
 import type { WeeklyPlanEntry } from '@/lib/db'
 import RatingModal from '@/components/meals/RatingModal'
 import InlineListEditor from '@/components/plan/InlineListEditor'
+import AddMealForm from '@/components/plan/AddMealForm'
 
 const DAY_NAMES = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag']
 const DAY_SHORT = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn']
@@ -67,6 +68,7 @@ export default function PlanPage() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [favorites, setFavorites] = useState<FavoriteMeal[]>([])
   const [showFavorites, setShowFavorites] = useState(false)
+  const [showAddMeal, setShowAddMeal] = useState(false)
   const [loading, setLoading] = useState(true)
   const [suggesting, setSuggesting] = useState(false)
   const [selectedDays, setSelectedDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6])
@@ -541,19 +543,33 @@ export default function PlanPage() {
       </div>
 
       {/* Favoritter */}
-      {favorites.length > 0 && (
-        <div className="bg-white rounded-2xl border border-stone-100 overflow-hidden mb-4">
-          <button
-            onClick={() => setShowFavorites(f => !f)}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-stone-50 transition-colors"
-          >
-            <div className="flex items-center gap-2">
+      <div className="bg-white rounded-2xl border border-stone-100 overflow-hidden mb-4">
+          <div className="flex items-center justify-between px-4 py-3">
+            <button
+              onClick={() => { setShowFavorites(f => !f); setShowAddMeal(false) }}
+              className="flex items-center gap-2 hover:opacity-70 transition-opacity"
+            >
               <span className="text-base">⭐</span>
               <span className="font-semibold text-stone-700">Favoritter</span>
-              <span className="text-xs bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full font-medium">{favorites.length}</span>
-            </div>
-            <ChevronRight size={15} className={`text-stone-400 transition-transform ${showFavorites ? 'rotate-90' : ''}`} />
-          </button>
+              {favorites.length > 0 && (
+                <span className="text-xs bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full font-medium">{favorites.length}</span>
+              )}
+              <ChevronRight size={15} className={`text-stone-400 transition-transform ${showFavorites ? 'rotate-90' : ''}`} />
+            </button>
+            <button
+              onClick={() => { setShowAddMeal(a => !a); setShowFavorites(true) }}
+              className="text-xs bg-orange-50 text-orange-600 border border-orange-200 px-3 py-1.5 rounded-lg font-medium hover:bg-orange-100 transition-colors"
+            >
+              + Opret opskrift
+            </button>
+          </div>
+
+          {showAddMeal && (
+            <AddMealForm
+              onSaved={() => { setShowAddMeal(false); load() }}
+              onCancel={() => setShowAddMeal(false)}
+            />
+          )}
 
           {showFavorites && (
             <div className="border-t border-stone-100 divide-y divide-stone-50">
@@ -647,7 +663,6 @@ export default function PlanPage() {
             </div>
           )}
         </div>
-      )}
 
       {/* Suggestion details panel */}
       {showSuggestions && suggestions.length > 0 && (
