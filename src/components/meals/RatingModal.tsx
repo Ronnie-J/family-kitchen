@@ -7,7 +7,6 @@ const TAGS = [
   { id: 'børnevenlig', label: 'Børnevenlig', emoji: '👶' },
   { id: 'hurtig', label: 'Under 30 min', emoji: '⚡' },
   { id: 'søndagsret', label: 'Søndagsret', emoji: '☀️' },
-  { id: 'ny_favorit', label: 'Ny favorit', emoji: '❤️' },
   { id: 'ikke_igen', label: 'Ikke igen', emoji: '🚫' },
   { id: 'vegetarisk', label: 'Vegetarisk', emoji: '🌱' },
   { id: 'festret', label: 'Festret', emoji: '🎉' },
@@ -24,16 +23,13 @@ export default function RatingModal({ mealId, mealName, onClose, onSaved }: Prop
   const [stars, setStars] = useState(0)
   const [hovered, setHovered] = useState(0)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [madeBy, setMadeBy] = useState('')
   const [saving, setSaving] = useState(false)
 
   const toggleTag = (id: string) => {
     if (id === 'ikke_igen') {
-      setSelectedTags(p => p.includes(id) ? p.filter(t => t !== id) : [...p.filter(t => t !== 'ny_favorit'), id])
-    } else if (id === 'ny_favorit') {
-      setSelectedTags(p => p.includes(id) ? p.filter(t => t !== id) : [...p.filter(t => t !== 'ikke_igen'), id])
+      setSelectedTags(p => p.includes(id) ? p.filter(t => t !== id) : [id])
     } else {
-      setSelectedTags(p => p.includes(id) ? p.filter(t => t !== id) : [...p, id])
+      setSelectedTags(p => p.includes(id) ? p.filter(t => t !== id) : [...p.filter(t => t !== 'ikke_igen'), id])
     }
   }
 
@@ -42,7 +38,7 @@ export default function RatingModal({ mealId, mealName, onClose, onSaved }: Prop
     await fetch(`/api/meals/${mealId}/rate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stars, tags: selectedTags, made_by: madeBy, mark_as_made: true }),
+      body: JSON.stringify({ stars, tags: selectedTags, mark_as_made: true }),
     })
     setSaving(false)
     onSaved()
@@ -101,16 +97,6 @@ export default function RatingModal({ mealId, mealName, onClose, onSaved }: Prop
                 </button>
               ))}
             </div>
-          </div>
-
-          <div>
-            <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Hvem lavede den? (valgfrit)</label>
-            <input
-              value={madeBy}
-              onChange={e => setMadeBy(e.target.value)}
-              placeholder="fx Ronnie"
-              className="w-full mt-1 border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
-            />
           </div>
 
           <div className="flex gap-2">
