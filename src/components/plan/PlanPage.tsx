@@ -267,7 +267,7 @@ export default function PlanPage() {
 
   const markAsDone = async (entry: WeeklyPlanEntry) => {
     await fetch('/api/plan', {
-      method: 'POST',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ week_start: weekStart, day_of_week: entry.day_of_week, status: 'done' }),
     })

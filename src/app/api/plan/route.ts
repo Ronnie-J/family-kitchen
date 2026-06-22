@@ -65,6 +65,17 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(db.prepare('SELECT * FROM weekly_plan WHERE week_start = ? AND day_of_week = ?').get(week, day_of_week))
 }
 
+export async function PATCH(req: NextRequest) {
+  const db = getDb()
+  const body = await req.json()
+  const { week_start, day_of_week, status } = body
+  const week = week_start || getWeekStart()
+  db.prepare(`
+    UPDATE weekly_plan SET status = ? WHERE week_start = ? AND day_of_week = ?
+  `).run(status, week, day_of_week)
+  return NextResponse.json(db.prepare('SELECT * FROM weekly_plan WHERE week_start = ? AND day_of_week = ?').get(week, day_of_week))
+}
+
 export async function DELETE(req: NextRequest) {
   const db = getDb()
   const body = await req.json()
