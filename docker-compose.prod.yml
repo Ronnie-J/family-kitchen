@@ -3,9 +3,9 @@ services:
     image: ghcr.io/ronnie-j/family-kitchen:latest
     container_name: family-kitchen
     ports:
-      - "8092:3000"
+      - "8088:3000"
     volumes:
-      - family-kitchen-data:/data
+      - /opt/family-kitchen/data:/data
     environment:
       NODE_ENV: production
       DATA_DIR: /data
@@ -17,6 +17,3 @@ services:
       retries: 3
       start_period: 20s
 
-volumes:
-  family-kitchen-data:
-    driver: local
