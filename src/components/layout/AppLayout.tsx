@@ -46,8 +46,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         {process.env.NEXT_PUBLIC_GIT_COMMIT && process.env.NEXT_PUBLIC_GIT_COMMIT !== 'dev' && (
-          <div className="px-5 pb-4 text-[11px] text-stone-300 font-mono">
-            {process.env.NEXT_PUBLIC_GIT_COMMIT.slice(0, 7)}
+          <div className="px-5 pb-4">
+            <a
+              href={`https://github.com/Ronnie-J/family-kitchen/commit/${process.env.NEXT_PUBLIC_GIT_COMMIT}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] text-stone-300 font-mono hover:text-stone-400 transition-colors"
+            >
+              {process.env.NEXT_PUBLIC_GIT_COMMIT.slice(0, 7)}
+            </a>
           </div>
         )}
       </aside>
