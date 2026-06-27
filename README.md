@@ -1,127 +1,139 @@
 # FamilyKitchen
 
-Dansk madplanlægnings-webapp til selvhosting. Planlæg ugens mad, hold styr på lager og fryser, få AI-genererede madforslag med opskrifter, og modtag den ugentlige madplan via Telegram.
+A Danish family meal planning web app for self-hosting. Plan the week's meals, track freezer and pantry inventory, get AI-generated meal suggestions with recipes, and receive the weekly meal plan via Telegram.
 
-## Funktioner
+> The app UI is in Danish. All development documentation is in English.
 
-- **Ugeplanlægning** — Planlæg alle 7 dage. Naviger frem/tilbage mellem uger. Markér dage som "Spiser ude" eller "Ingen madlavning". Støtte for retter der strækker sig til næste dag (rester).
-- **Favoritter** — Retter med høj bedømmelse gemmes automatisk som favoritter og kan planlægges direkte fra Ugeplaner. Opret også egne opskrifter fra bunden direkte i Favoritter-panelet.
-- **Inline redigering** — Rediger ingredienser og fremgangsmåde direkte på stedet — på planlagte retter, AI-forslag og favoritter.
-- **AI-madforslag** — Mistral AI genererer forslag med beskrivelse, ingredienser (skaleret til familiestørrelse) og trin-for-trin opskrift. Tilpasses antal tomme dage og undgår retter lavet inden for de seneste 14 dage.
-- **2-dages retter** — Markér et AI-forslag som "Strækker sig over 2 dage". AI skalerer ingredienser op og næste dag sættes automatisk som rester.
-- **Bedømmelse** — Giv retter 1–5 stjerner og kategoribadges efter madlavning. Bedømmelsen erstattes ved ændring og vises på både planlagte retter og favoritter. Kan redigeres til enhver tid.
-- **Lager** — Fryser og spisekammer med farvede kategoribadges. Stregkodescanning via kamera. Billedgenkendelse via Mistral Vision (Pixtral-12B).
-- **Indkøbsliste** — Autogenereret fra ugeplanens ingredienser. Faste varer tilføjes automatisk.
-- **Madhistorik** — Alle retter du har lavet med dato og stjernebedømmelse.
-- **Telegram** — Ugentlig besked sendes automatisk søndag med madplan og indkøbsliste.
-- **AI-log** — Se præcis hvilke prompts der sendes til Mistral og hvornår (under Indstillinger).
+## Features
+
+- **Week planning** — Plan all 7 days. Navigate forward/backward between weeks. Mark days as "Eating out" or "No cooking". Support for meals that stretch into the next day as leftovers.
+- **Favourites** — Highly rated meals are automatically saved as favourites and can be planned directly from the week view. Create your own recipes from scratch in the Favourites panel.
+- **Inline editing** — Edit ingredients and recipe steps in place — on planned meals, AI suggestions, and favourites.
+- **AI meal suggestions** — Mistral AI generates suggestions with description, ingredients (scaled to family size), and step-by-step recipe. Adapts to the number of empty days and avoids meals made within the last 14 days.
+- **2-day meals** — Mark an AI suggestion as "Stretches over 2 days". AI scales ingredients up and the next day is automatically set as leftovers.
+- **Ratings** — Rate meals 1–5 stars with category badges after cooking. Rating replaces the previous one and is shown on both planned meals and favourites. Editable at any time.
+- **Inventory** — Freezer and pantry with colour-coded category badges. Barcode scanning via camera. Image recognition via Mistral Vision (Pixtral-12B).
+- **Shopping list** — Auto-generated from the week plan's ingredients. Permanent items from settings are added automatically.
+- **Meal history** — All meals you have cooked with date and star rating.
+- **Statistics** — Weekly cooking rate, inventory age breakdown, and positive reinforcement badges.
+- **Telegram** — Weekly message sent automatically on Sunday with meal plan and shopping list.
+- **AI log** — See exactly which prompts are sent to Mistral and when (under Settings).
 
 ## Tech stack
 
-| Lag | Teknologi |
-|-----|-----------|
+| Layer | Technology |
+|-------|------------|
 | Frontend | Next.js 15 (App Router), TypeScript, Tailwind CSS |
 | Backend | Next.js API routes, Node.js custom server |
 | Database | SQLite via better-sqlite3 |
-| AI | Mistral AI — `mistral-small-latest` (tekst), `pixtral-12b-2409` (billeder) |
-| Billeder | Unsplash API (valgfrit) |
-| Stregkode | Open Food Facts API |
-| Scheduling | node-cron (Telegram-udsendelse søndag) |
-| Container | Docker, port 8092 (produktion) / 8093 (dev) |
+| AI | Mistral AI — `mistral-small-latest` (text), `pixtral-12b-2409` (images) |
+| Images | Unsplash API (optional) |
+| Barcode | Open Food Facts API |
+| Scheduling | node-cron (Telegram dispatch on Sunday) |
+| Container | Docker, port 8088 (production) / 8093 (dev) |
 
-## Kom i gang
+## Getting started
 
-### Forudsætninger
+### Prerequisites
 
-- Docker og Docker Compose
+- Docker and Docker Compose
 
-### Produktion (home server)
+### Production (home server via Portainer)
 
+Use `docker-compose.prod.yml` as the stack definition in Portainer. The image is published to `ghcr.io/ronnie-j/family-kitchen:latest` via GitHub Actions on every push to `main`.
+
+Create the data directory on the host before deploying:
 ```bash
-docker compose up -d
+mkdir -p /opt/family-kitchen/data
 ```
 
-Åbn **http://[server-ip]:8092**
+Open **http://[server-ip]:8088**
 
-Data gemmes i Docker-volume `family-kitchen-data`.
+Data is stored in `/opt/family-kitchen/data` on the host (bind mount).
 
-### Lokal udvikling
+### Local development
 
 ```bash
 docker compose -f docker-compose.dev.yml up --build -d
 ```
 
-Åbn **http://localhost:8093**
+Open **http://localhost:8093**
 
-Data gemmes i `./data-dev/`.
+Data is stored in `./data-dev/`.
 
 ```bash
 docker compose -f docker-compose.dev.yml down
 ```
 
-## Konfiguration
+## Configuration
 
-Alle indstillinger sættes i appen under **Indstillinger**:
+All settings are managed in the app under **Settings**:
 
-| Indstilling | Beskrivelse |
-|-------------|-------------|
-| Familieprofil | Antal voksne, antal børn, alder per barn |
-| Allergier/præferencer | Bruges i AI-prompts |
-| Madpræferencer til AI | Fritekst om hvad familien kan lide |
-| Gem automatisk som favorit ved | Stjernegrænse for auto-favorit (3–5, default 4) |
-| Mistral API-nøgle | Gratis på [console.mistral.ai](https://console.mistral.ai) |
-| Mistral-model | `mistral-small-latest` anbefales (gratis, EU) |
-| Unsplash API-nøgle | Valgfrit — tilføjer madbilleder til forslag |
-| Telegram bot-token | Fra @BotFather |
-| Telegram chat-ID | Grupperum eller personlig chat |
-| Sendetidspunkt | Søndag kl. HH:MM |
-| Faste indkøbsvarer | Tilføjes automatisk til indkøbslisten hver uge |
+| Setting | Description |
+|---------|-------------|
+| Family profile | Number of adults, number of children, age per child |
+| Allergies/preferences | Used in AI prompts |
+| Food preferences for AI | Free text about what the family likes |
+| Auto-save as favourite at | Star threshold for auto-favourite (3–5, default 4) |
+| Mistral API key | Free at [console.mistral.ai](https://console.mistral.ai) |
+| Mistral model | `mistral-small-latest` recommended (free, EU) |
+| Unsplash API key | Optional — adds food images to suggestions |
+| Telegram bot token | From @BotFather |
+| Telegram chat ID | Group chat or personal chat |
+| Send time | Sunday at HH:MM |
+| Permanent shopping items | Added automatically to the shopping list every week |
 
-## Forretningsregler
+## Business rules
 
-### Ugeplanlægning
-- Ugen starter mandag. Man kan navigere op til 2 uger frem og 2 uger tilbage.
-- En dag kan enten have en planlagt ret, være markeret "Spiser ude" eller "Ingen madlavning".
-- Rester: en ret kan markeres til at strække sig til næste dag. Næste dag vises som "🥘 Rester fra [dag]" uden egne ingredienser.
-- ✓-knappen markerer retten som lavet og åbner bedømmelsesdialogen. Retten forbliver i ugeplanen med "Lavet"-badge.
+### Week planning
+- The week starts on Monday. Navigate up to 2 weeks forward and 2 weeks back.
+- A day can either have a planned meal, be marked "Eating out", or "No cooking".
+- Leftovers: a meal can stretch into the next day. The next day shows as "🥘 Leftovers from [day]" with no separate ingredients.
+- The ✓ button marks a meal as done and opens the rating dialog. The meal remains in the week plan with a "Done" badge.
 
-### Bedømmelse
-- 1–5 stjerner og valgfrie kategoribadges: Børnevenlig, Under 30 min, Søndagsret, Vegetarisk, Festret, Ikke igen.
-- Der er præcis én bedømmelse per ret — en ny bedømmelse erstatter den tidligere.
-- Bedømmelsen kan redigeres til enhver tid via blyant-ikonet ved siden af stjernerne.
-- Rating og badges vises på planlagte retter (expanded panel) og i Favoritter.
+### Ratings
+- 1–5 stars and optional category badges: Kid-friendly, Under 30 min, Sunday meal, Vegetarian, Party dish, Never again.
+- There is exactly one rating per meal — a new rating replaces the previous one.
+- Ratings can be edited at any time via the pencil icon next to the stars.
+- Rating and badges are shown on planned meals (expanded panel) and in Favourites.
 
-### AI-forslag
-- Antal forslag = `max(2, antal tomme dage i ugen)` — aldrig færre end 2, aldrig mere end nødvendigt.
-- Undgår retter lavet inden for de **seneste 14 dage**. Ældre retter kan frit foreslås igen.
-- Inkluderer familiens favoritter som inspiration (AI forsøger at inkludere 1–2).
-- Ingredienser skaleres præcist til antal personer (voksne + børn).
-- Hvert forslag indeholder navn, beskrivelse, tilberedningstid, ingredienser med mængder og fremgangsmåde i 4–8 trin.
-- Ingredienser og opskriftstrin kan redigeres direkte på forslagskortet inden retten planlægges.
+### AI suggestions
+- Number of suggestions = `max(2, empty days in the week)` — never fewer than 2, never more than needed.
+- Avoids meals made within the **last 14 days**. Older meals can freely be suggested again.
+- Includes family favourites as inspiration (AI attempts to include 1–2).
+- Ingredients are scaled precisely to the number of people (adults + children).
+- Each suggestion includes name, description, prep time, ingredients with quantities, and a recipe in 4–8 steps.
+- Ingredients and recipe steps can be edited directly on the suggestion card before planning.
 
-### 2-dages retter
-- Toggle "Strækker sig over 2 dage?" på et AI-forslag inden du vælger dag.
-- Mistral skalerer ingredienserne: primærvarer fordobles, smaggivere +50%, væsker fordobles.
-- Dag 1 gemmes med de skalerede ingredienser. Dag 2 sættes automatisk som rester.
+### 2-day meals
+- Toggle "Stretches over 2 days?" on an AI suggestion before selecting a day.
+- Mistral scales the ingredients: primary ingredients doubled, flavourings +50%, liquids doubled.
+- Day 1 is saved with the scaled ingredients. Day 2 is automatically set as leftovers.
 
-### Favoritter
-- Bedøm en ret med 4+ stjerner (konfigurerbart i Indstillinger) → gemmes automatisk som favorit.
-- Favoritter vises i et kollapsibelt panel øverst i Ugeplaner og kan planlægges direkte til en dag.
-- Billede og opskrift fra AI-forslagene caches på retten og følger med ved planlægning fra Favoritter.
-- Opret egne opskrifter fra bunden via "**+ Opret opskrift**" — de gemmes direkte som favoritter.
-- Ingredienser og opskrift kan redigeres inline på alle favoritkort.
-- Fjern en ret fra favoritter via ✕ (sletter ikke retten, kun favoritstatus).
+### Favourites
+- Rate a meal 4+ stars (configurable in Settings) → saved automatically as a favourite.
+- Favourites are shown in a collapsible panel at the top of the week view and can be planned directly to a day.
+- Image and recipe from AI suggestions are cached on the meal and carried over when planning from Favourites.
+- Create your own recipes from scratch via "**+ Create recipe**" — saved directly as favourites.
+- Ingredients and recipe can be edited inline on all favourite cards.
+- Remove a meal from favourites via ✕ (does not delete the meal, only removes favourite status).
 
-### Lager
-- To placeringer: fryser og spisekammer.
-- Kategorier med farvede badges: kød (rød), fisk (blå), grønt (grøn), mejeri (gul), desserter (pink), andet (lilla).
-- Varer kan tilføjes manuelt, via stregkodescanning (Open Food Facts) eller billedanalyse (Pixtral Vision).
+### Inventory
+- Two locations: freezer and pantry.
+- Colour-coded category badges: meat (red), fish (blue), produce (green), dairy (yellow), desserts (pink), other (purple).
+- Items can be added manually, via barcode scanning (Open Food Facts), or image analysis (Pixtral Vision).
 
-## AI-prompts
+### Statistics
+- Weekly cooking rate shown as day-by-day bars for the last 4 weeks.
+- Inventory age breakdown: fresh (<7 days), aging (7–30 days), old (>30 days).
+- Positive reinforcement badges earned for cooking streaks, using leftovers, high ratings, etc.
+- Items older than 30 days are highlighted with a suggestion to plan meals using them.
 
-Prompts er hardkodet i kodebasen og kan tweakes direkte i kildefilerne. Dynamiske værdier indsættes af serveren ved kørselstid.
+## AI prompts
 
-### Madforslag (`src/app/api/plan/suggest/route.ts`)
+Prompts are hardcoded in the codebase and can be tweaked directly in the source files. Dynamic values are inserted by the server at runtime. The app UI strings inside prompts remain in Danish as they are sent to Mistral to generate Danish content.
+
+### Meal suggestions (`src/app/api/plan/suggest/route.ts`)
 
 ```
 Du er en familiekogebog-assistent. Foreslå [N] middagsretter til en dansk familie.
@@ -165,7 +177,7 @@ VIGTIGT:
 - Alle navne, tekster og trin skal være på dansk
 ```
 
-### 2-dages skalering (`src/app/api/plan/scale/route.ts`)
+### 2-day scaling (`src/app/api/plan/scale/route.ts`)
 
 ```
 Du har en opskrift på "[ret]" til [total] personer (1 dag). Juster ingrediensmængderne
@@ -183,57 +195,66 @@ Returnér KUN et JSON-array med de justerede ingredienser på dansk (ingen markd
 ["800g hakket oksekød", "4 dåser hakkede tomater", "600g spaghetti"]
 ```
 
-### Billedanalyse (`src/app/api/vision/route.ts`)
+### Image analysis (`src/app/api/vision/route.ts`)
 
-Pixtral-12B analyserer et foto af en vare og returnerer JSON med navn, kategori, mængde og placering (freezer/pantry).
+Pixtral-12B analyses a photo of an item and returns JSON with name, category, quantity, and location (freezer/pantry).
 
-## Projektstruktur
+## Project structure
 
 ```
 src/
 ├── app/
 │   ├── api/
-│   │   ├── ai-logs/       # AI-anmodningslog
-│   │   ├── barcode/       # Open Food Facts opslag
-│   │   ├── cron/          # Telegram-udsendelse (kaldt af node-cron)
-│   │   ├── history/       # Madhistorik
-│   │   ├── inventory/     # Lager (fryser + spisekammer)
-│   │   ├── meals/         # Opskrifter, bedømmelser og favoritter
-│   │   ├── mock/          # Testdata (seed/ryd)
-│   │   ├── plan/          # Ugeplan + AI-forslag + 2-dages skalering
-│   │   ├── settings/      # Appindstillinger
-│   │   ├── shopping/      # Indkøbsliste
-│   │   ├── telegram/      # Manuel Telegram-test
-│   │   └── vision/        # Billedanalyse (Pixtral)
+│   │   ├── ai-logs/       # AI request log
+│   │   ├── barcode/       # Open Food Facts lookup
+│   │   ├── cron/          # Telegram dispatch (called by node-cron)
+│   │   ├── history/       # Meal history
+│   │   ├── inventory/     # Inventory (freezer + pantry)
+│   │   ├── meals/         # Recipes, ratings, and favourites
+│   │   ├── mock/          # Test data (seed/clear)
+│   │   ├── plan/          # Week plan + AI suggestions + 2-day scaling
+│   │   ├── settings/      # App settings
+│   │   ├── shopping/      # Shopping list
+│   │   ├── stats/         # Statistics API
+│   │   ├── telegram/      # Manual Telegram test
+│   │   └── vision/        # Image analysis (Pixtral)
 │   ├── historik/
 │   ├── indkob/
 │   ├── indstillinger/
 │   ├── lager/
-│   └── plan/
+│   ├── plan/
+│   └── statistik/
 ├── components/
 │   ├── history/
 │   ├── inventory/
-│   ├── layout/            # AppLayout med navigation
+│   ├── layout/            # AppLayout with navigation and version display
 │   ├── meals/             # RatingModal
 │   ├── plan/              # PlanPage, InlineListEditor, AddMealForm, MealRatingBadges
 │   ├── settings/
-│   └── shopping/
+│   ├── shopping/
+│   └── stats/             # StatsPage
 └── lib/
-    ├── db.ts              # SQLite schema og typer
-    └── telegram.ts        # Beskedopbygning og afsendelse
+    ├── db.ts              # SQLite schema and types
+    └── telegram.ts        # Message building and Telegram dispatch
 ```
 
 ## Database
 
-SQLite-fil på `/data/family-kitchen.db` (i container).
+SQLite file at `/data/family-kitchen.db` (inside container), bind-mounted from `/opt/family-kitchen/data` on the host.
 
-| Tabel | Indhold |
-|-------|---------|
-| `inventory_items` | Lager- og frysevarer |
-| `meals` | Opskrifter med billede, opskrift, bedømmelse, favoritstatus og ekskluderingsflag |
-| `meal_ratings` | Bedømmelse med tags — præcis én per ret (erstattes ved ændring) |
-| `meal_history` | Historik over lavede retter |
-| `weekly_plan` | Ugeplaner med opskrift, ingredienser, fremgangsmåde og rester-flag |
-| `shopping_items` | Indkøbsliste (uge-tilknyttet + permanente) |
-| `settings` | Nøgle/værdi-konfiguration inkl. `favorite_min_stars` |
-| `ai_logs` | Log over AI-anmodninger (prompt + svar-uddrag) |
+| Table | Contents |
+|-------|----------|
+| `inventory_items` | Freezer and pantry items |
+| `meals` | Recipes with image, recipe steps, rating, favourite status, and exclusion flag |
+| `meal_ratings` | Rating with tags — exactly one per meal (replaced on change) |
+| `meal_history` | History of cooked meals |
+| `weekly_plan` | Week plans with recipe, ingredients, recipe steps, and leftover flag |
+| `shopping_items` | Shopping list (week-linked + permanent) |
+| `settings` | Key/value configuration including `favorite_min_stars` |
+| `ai_logs` | Log of AI requests (prompt + response preview) |
+
+## Deployment
+
+Images are published to `ghcr.io/ronnie-j/family-kitchen:latest` via GitHub Actions on every push to `main`. The git commit SHA is baked in as `NEXT_PUBLIC_GIT_COMMIT` and displayed in the bottom of the desktop sidebar.
+
+To update on the home server: pull and redeploy the stack in Portainer.
