@@ -45,6 +45,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             )
           })}
         </nav>
+        {process.env.NEXT_PUBLIC_GIT_COMMIT && process.env.NEXT_PUBLIC_GIT_COMMIT !== 'dev' && (
+          <div className="px-5 pb-4 text-[11px] text-stone-300 font-mono">
+            {process.env.NEXT_PUBLIC_GIT_COMMIT.slice(0, 7)}
+          </div>
+        )}
       </aside>
 
       {/* Main content */}

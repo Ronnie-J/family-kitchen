@@ -10,6 +10,10 @@ RUN npm ci
 
 # Build Next.js
 FROM deps AS builder
+ARG GIT_COMMIT=dev
+ARG GIT_BUILT_AT=unknown
+ENV NEXT_PUBLIC_GIT_COMMIT=$GIT_COMMIT
+ENV NEXT_PUBLIC_GIT_BUILT_AT=$GIT_BUILT_AT
 COPY . .
 RUN npx next build
 RUN npx tsc --project tsconfig.server.json
