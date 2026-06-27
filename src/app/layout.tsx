@@ -5,6 +5,15 @@ export const metadata: Metadata = {
   title: 'FamilyKitchen',
   description: 'Madplanlægning og lagerstyring til familien',
   manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'FamilyKitchen',
+  },
+  icons: {
+    apple: '/icons/apple-touch-icon.png',
+    icon: '/icons/favicon-48.png',
+  },
 }
 
 export const viewport: Viewport = {
