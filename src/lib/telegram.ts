@@ -38,11 +38,21 @@ export function buildWeeklyMessage(): string {
     WHERE week_start = ? ORDER BY day_of_week
   `).all(weekStart) as { day_of_week: number; meal_name: string | null; status: string }[]
 
-  const shopping = db.prepare(`
+  const shoppingFromDb = db.prepare(`
     SELECT name, quantity FROM shopping_items
     WHERE (week_start = ? OR is_permanent = 1) AND is_checked = 0
     ORDER BY is_permanent DESC, name
   `).all(weekStart) as { name: string; quantity: string | null }[]
+
+  const permanentSetting = (db.prepare('SELECT value FROM settings WHERE key = ?').get('permanent_shopping_items') as { value: string } | undefined)?.value ?? ''
+  const settingsNames = new Set(shoppingFromDb.map(i => i.name.toLowerCase()))
+  const settingItems: { name: string; quantity: null }[] = permanentSetting
+    .split('\n')
+    .map(s => s.trim())
+    .filter(s => s && !settingsNames.has(s.toLowerCase()))
+    .map(s => ({ name: s, quantity: null }))
+
+  const shopping = [...settingItems, ...shoppingFromDb]
 
   const dayNames = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag']
 

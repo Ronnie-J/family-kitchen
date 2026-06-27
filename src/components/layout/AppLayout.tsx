@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Package, CalendarDays, ShoppingCart, Clock, Settings } from 'lucide-react'
+import { Package, CalendarDays, ShoppingCart, Clock, Settings, BarChart2 } from 'lucide-react'
 
 const NAV = [
   { href: '/lager', label: 'Lager', icon: Package },
   { href: '/plan', label: 'Planlæg', icon: CalendarDays },
   { href: '/indkob', label: 'Indkøb', icon: ShoppingCart },
   { href: '/historik', label: 'Historik', icon: Clock },
+  { href: '/statistik', label: 'Statistik', icon: BarChart2 },
   { href: '/indstillinger', label: 'Indstillinger', icon: Settings },
 ]
 

@@ -10,9 +10,17 @@ export async function GET(req: NextRequest) {
     SELECT * FROM shopping_items
     WHERE week_start = ? OR is_permanent = 1
     ORDER BY is_permanent DESC, is_checked ASC, name ASC
-  `).all(week)
+  `).all(week) as { id: number; name: string; is_permanent: number; is_checked: number; quantity: string | null; week_start: string | null }[]
 
-  return NextResponse.json({ week_start: week, items })
+  const permanentSetting = (db.prepare('SELECT value FROM settings WHERE key = ?').get('permanent_shopping_items') as { value: string } | undefined)?.value ?? ''
+  const existingNames = new Set(items.map(i => i.name.toLowerCase()))
+  const settingItems = permanentSetting
+    .split('\n')
+    .map(s => s.trim())
+    .filter(s => s && !existingNames.has(s.toLowerCase()))
+    .map((s, idx) => ({ id: -(idx + 1), name: s, quantity: null, week_start: null, is_permanent: 1, is_checked: 0 }))
+
+  return NextResponse.json({ week_start: week, items: [...settingItems, ...items] })
 }
 
 export async function POST(req: NextRequest) {

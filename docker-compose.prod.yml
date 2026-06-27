@@ -1,0 +1,22 @@
+services:
+  family-kitchen:
+    image: ghcr.io/ronnie-j/family-kitchen:latest
+    container_name: family-kitchen
+    ports:
+      - "8092:3000"
+    volumes:
+      - family-kitchen-data:/data
+    environment:
+      NODE_ENV: production
+      DATA_DIR: /data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/settings"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  family-kitchen-data:
+    driver: local
