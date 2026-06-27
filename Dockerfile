@@ -24,21 +24,17 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV DATA_DIR=/data
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
 WORKDIR /app
 
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/dist ./dist
 # node_modules needed for custom server (node-cron, telegram, etc.)
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder /app/node_modules ./node_modules
 
-RUN mkdir -p /data && chown nextjs:nodejs /data
+RUN mkdir -p /data
 
-USER nextjs
 EXPOSE 3000
 
 CMD ["node", "dist/server.js"]
